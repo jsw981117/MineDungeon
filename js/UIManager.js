@@ -6,6 +6,8 @@ class UIManager {
     this.tileSize = 0;
     this.offsetX = 0;
     this.offsetY = 0;
+    this.holdTimer = null;
+    this.holdStartPos = null;
     this.setupCanvas();
     this.setupEvents();
   }
@@ -22,19 +24,109 @@ class UIManager {
   }
 
   setupEvents() {
-    this.canvas.addEventListener('click', (e) => {
+    // 마우스 이벤트
+    this.canvas.addEventListener('mousedown', (e) => this.handlePointerDown(e, e.clientX, e.clientY));
+    this.canvas.addEventListener('mouseup', (e) => this.handlePointerUp(e, e.clientX, e.clientY));
+    this.canvas.addEventListener('mousemove', (e) => this.handlePointerMove(e, e.clientX, e.clientY));
+    this.canvas.addEventListener('mouseleave', () => this.cancelHold());
+
+    // 우클릭
+    this.canvas.addEventListener('contextmenu', (e) => {
+      e.preventDefault();
       const rect = this.canvas.getBoundingClientRect();
       const x = e.clientX - rect.left;
       const y = e.clientY - rect.top;
       const tileX = Math.floor(x / this.tileSize);
       const tileY = Math.floor(y / this.tileSize);
-      this.game.onTileClick(tileX, tileY);
+      this.game.onTileFlag(tileX, tileY);
+      this.render();
+    });
+
+    // 터치 이벤트
+    this.canvas.addEventListener('touchstart', (e) => {
+      e.preventDefault();
+      const touch = e.touches[0];
+      this.handlePointerDown(e, touch.clientX, touch.clientY);
+    });
+    this.canvas.addEventListener('touchend', (e) => {
+      e.preventDefault();
+      const touch = e.changedTouches[0];
+      this.handlePointerUp(e, touch.clientX, touch.clientY);
+    });
+    this.canvas.addEventListener('touchmove', (e) => {
+      e.preventDefault();
+      const touch = e.touches[0];
+      this.handlePointerMove(e, touch.clientX, touch.clientY);
     });
 
     window.addEventListener('resize', () => {
       this.setupCanvas();
       this.render();
     });
+  }
+
+  handlePointerDown(e, clientX, clientY) {
+    // 우클릭은 무시
+    if (e.button === 2) return;
+
+    const rect = this.canvas.getBoundingClientRect();
+    const x = clientX - rect.left;
+    const y = clientY - rect.top;
+    const tileX = Math.floor(x / this.tileSize);
+    const tileY = Math.floor(y / this.tileSize);
+
+    this.holdStartPos = { x: tileX, y: tileY };
+
+    // 홀드 타이머 시작
+    const holdDuration = this.game.settings.getHoldDuration() * 1000;
+    this.holdTimer = setTimeout(() => {
+      this.game.onTileFlag(tileX, tileY);
+      this.render();
+      this.holdTimer = null;
+    }, holdDuration);
+  }
+
+  handlePointerUp(e, clientX, clientY) {
+    // 우클릭은 무시
+    if (e.button === 2) return;
+
+    const rect = this.canvas.getBoundingClientRect();
+    const x = clientX - rect.left;
+    const y = clientY - rect.top;
+    const tileX = Math.floor(x / this.tileSize);
+    const tileY = Math.floor(y / this.tileSize);
+
+    // 홀드 타이머가 아직 실행 중이면 일반 클릭
+    if (this.holdTimer) {
+      clearTimeout(this.holdTimer);
+      this.holdTimer = null;
+      this.game.onTileClick(tileX, tileY);
+    }
+
+    this.holdStartPos = null;
+  }
+
+  handlePointerMove(e, clientX, clientY) {
+    if (!this.holdStartPos) return;
+
+    const rect = this.canvas.getBoundingClientRect();
+    const x = clientX - rect.left;
+    const y = clientY - rect.top;
+    const tileX = Math.floor(x / this.tileSize);
+    const tileY = Math.floor(y / this.tileSize);
+
+    // 다른 타일로 이동하면 홀드 취소
+    if (tileX !== this.holdStartPos.x || tileY !== this.holdStartPos.y) {
+      this.cancelHold();
+    }
+  }
+
+  cancelHold() {
+    if (this.holdTimer) {
+      clearTimeout(this.holdTimer);
+      this.holdTimer = null;
+    }
+    this.holdStartPos = null;
   }
 
   render() {
@@ -70,6 +162,14 @@ class UIManager {
     if (tile.hasBlock()) {
       this.ctx.fillStyle = '#555';
       this.ctx.fillRect(px, py, this.tileSize, this.tileSize);
+
+      // 깃발(해골) 표시
+      if (tile.block.isFlagged()) {
+        this.ctx.font = `${this.tileSize * 0.5}px Arial`;
+        this.ctx.textAlign = 'center';
+        this.ctx.textBaseline = 'middle';
+        this.ctx.fillText('💀', px + this.tileSize / 2, py + this.tileSize / 2);
+      }
       return;
     }
 

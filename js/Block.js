@@ -1,6 +1,7 @@
 class Block {
   constructor() {
     this.explored = false;
+    this.flagged = false;
   }
 
   explore() {
@@ -9,5 +10,13 @@ class Block {
 
   isExplored() {
     return this.explored;
+  }
+
+  toggleFlag() {
+    this.flagged = !this.flagged;
+  }
+
+  isFlagged() {
+    return this.flagged;
   }
 }

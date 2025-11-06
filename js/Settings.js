@@ -3,6 +3,7 @@ class Settings {
     this.textScale = parseFloat(localStorage.getItem('textScale')) || 1;
     this.buttonScale = parseFloat(localStorage.getItem('buttonScale')) || 1;
     this.orientation = localStorage.getItem('orientation') || 'portrait';
+    this.holdDuration = parseFloat(localStorage.getItem('holdDuration')) || 0.6;
     this.apply();
   }
 
@@ -43,5 +44,14 @@ class Settings {
 
   getOrientation() {
     return this.orientation;
+  }
+
+  setHoldDuration(value) {
+    this.holdDuration = Math.max(0.1, Math.min(2, value));
+    localStorage.setItem('holdDuration', this.holdDuration);
+  }
+
+  getHoldDuration() {
+    return this.holdDuration;
   }
 }

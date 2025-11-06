@@ -49,6 +49,9 @@ class Game {
 
     // 블럭 제거
     if (tile.hasBlock()) {
+      // 깃발이 표시된 블록은 클릭 무시
+      if (tile.block.isFlagged()) return;
+
       tile.removeBlock();
       tile.explored = true;
 
@@ -134,6 +137,16 @@ class Game {
           }
         }
       }
+    }
+  }
+
+  onTileFlag(x, y) {
+    const tile = this.board.getTile(x, y);
+    if (!tile) return;
+
+    // 블럭이 있을 때만 깃발 토글 가능
+    if (tile.hasBlock()) {
+      tile.block.toggleFlag();
     }
   }
 
