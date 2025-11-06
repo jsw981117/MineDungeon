@@ -255,7 +255,7 @@ function showDeckPopup() {
   const enemies = game.deck.getAllEnemies();
   const items = game.deck.getAllItems();
 
-  let enemiesHTML = '<div class="deck-section"><div class="deck-section-title">적 목록 (다음 층 배치)</div><div class="deck-list">';
+  let enemiesHTML = '<div class="deck-section"><div class="deck-section-title">몬스터 피스</div><div class="deck-list">';
   if (enemies.length === 0) {
     enemiesHTML += '<div class="deck-empty">없음</div>';
   } else {
@@ -264,13 +264,14 @@ function showDeckPopup() {
         <div class="deck-item enemy-item" onclick="showPieceTooltip(event, 'enemy', ${index})">
           <div class="deck-item-name">${enemy.name}</div>
           <div class="deck-item-hp">HP: ${enemy.hp}/${enemy.maxHp}</div>
+          <div class="deck-item-durability">내구도: ${enemy.durability}</div>
         </div>
       `;
     });
   }
   enemiesHTML += '</div></div>';
 
-  let itemsHTML = '<div class="deck-section"><div class="deck-section-title">아이템 목록 (배치 대기)</div><div class="deck-list">';
+  let itemsHTML = '<div class="deck-section"><div class="deck-section-title">아이템 피스</div><div class="deck-list">';
   if (items.length === 0) {
     itemsHTML += '<div class="deck-empty">없음</div>';
   } else {
@@ -328,7 +329,7 @@ function showPieceTooltip(event, type, index) {
       <div class="tooltip-stat">HP: ${piece.hp}/${piece.maxHp}</div>
       <div class="tooltip-stat">공격력: ${piece.attack}</div>
       <div class="tooltip-stat">방어력: ${piece.defense}</div>
-      <div class="tooltip-stat">경험치: ${piece.expReward}</div>
+      <div class="tooltip-stat">내구도: ${piece.durability}</div>
     `;
     if (piece.critRate > 0) tooltipHTML += `<div class="tooltip-stat">치명타율: ${piece.critRate}%</div>`;
     if (piece.evasion > 0) tooltipHTML += `<div class="tooltip-stat">회피율: ${piece.evasion}%</div>`;
