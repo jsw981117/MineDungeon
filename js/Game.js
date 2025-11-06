@@ -50,12 +50,36 @@ class Game {
     // 블럭 제거
     if (tile.hasBlock()) {
       tile.removeBlock();
-      this.uiManager.render();
+      tile.explored = true;
+
+      // 피스 상호작용
+      if (tile.hasPiece()) {
+        const piece = tile.piece;
+        const shouldRemove = piece.interact(this.player, this);
+
+        if (shouldRemove) {
+          tile.removePiece();
+        }
+
+        this.uiManager.updateStats();
+        this.uiManager.render();
+
+        // 플레이어 사망 체크
+        if (this.player.isDead()) {
+          this.gameOver();
+        }
+      } else {
+        // 빈칸 - 연쇄 탐색
+        if (tile.adjacentEnemies === 0) {
+          this.floodFill(x, y);
+        }
+        this.uiManager.render();
+      }
       return;
     }
 
-    // 피스 상호작용
-    if (tile.hasPiece()) {
+    // 이미 탐색된 타일 - 피스가 있으면 상호작용
+    if (tile.explored && tile.hasPiece()) {
       const piece = tile.piece;
       const shouldRemove = piece.interact(this.player, this);
 
@@ -69,6 +93,46 @@ class Game {
       // 플레이어 사망 체크
       if (this.player.isDead()) {
         this.gameOver();
+      }
+    }
+  }
+
+  floodFill(x, y) {
+    const queue = [[x, y]];
+    const visited = new Set();
+
+    while (queue.length > 0) {
+      const [cx, cy] = queue.shift();
+      const key = `${cx},${cy}`;
+
+      if (visited.has(key)) continue;
+      visited.add(key);
+
+      const tile = this.board.getTile(cx, cy);
+      if (!tile) continue;
+
+      // 블럭 제거
+      if (tile.hasBlock()) {
+        tile.removeBlock();
+      }
+      tile.explored = true;
+
+      // 주변 적이 0이면 8방향 확장
+      if (tile.adjacentEnemies === 0 && !tile.hasPiece()) {
+        const directions = [
+          [-1, -1], [0, -1], [1, -1],
+          [-1, 0],           [1, 0],
+          [-1, 1],  [0, 1],  [1, 1]
+        ];
+
+        for (const [dx, dy] of directions) {
+          const nx = cx + dx;
+          const ny = cy + dy;
+          const neighborKey = `${nx},${ny}`;
+          if (!visited.has(neighborKey)) {
+            queue.push([nx, ny]);
+          }
+        }
       }
     }
   }

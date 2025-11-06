@@ -40,4 +40,30 @@ class Board {
     }
     return false;
   }
+
+  countAdjacentEnemies(x, y) {
+    const directions = [
+      [-1, -1], [0, -1], [1, -1],
+      [-1, 0],           [1, 0],
+      [-1, 1],  [0, 1],  [1, 1]
+    ];
+
+    let count = 0;
+    for (const [dx, dy] of directions) {
+      const adjacentTile = this.getTile(x + dx, y + dy);
+      if (adjacentTile && adjacentTile.hasPiece() && adjacentTile.piece.type === 'enemy') {
+        count++;
+      }
+    }
+    return count;
+  }
+
+  calculateAllAdjacentEnemies() {
+    for (let y = 0; y < this.height; y++) {
+      for (let x = 0; x < this.width; x++) {
+        const tile = this.getTile(x, y);
+        tile.adjacentEnemies = this.countAdjacentEnemies(x, y);
+      }
+    }
+  }
 }

@@ -73,41 +73,123 @@ class UIManager {
       return;
     }
 
-    // 피스
-    if (tile.hasPiece()) {
-      const piece = tile.piece;
-      let color = '#fff';
+    // 탐색된 타일
+    if (tile.explored) {
+      // 피스가 있으면 피스 렌더링
+      if (tile.hasPiece()) {
+        const piece = tile.piece;
+        let color = '#fff';
 
-      if (piece.type === 'enemy') {
-        color = '#c44';
-      } else if (piece.type === 'item') {
-        color = '#4af';
-      } else if (piece.type === 'event') {
-        color = '#fc4';
+        if (piece.type === 'enemy') {
+          color = '#c44';
+        } else if (piece.type === 'item') {
+          color = '#4af';
+        } else if (piece.type === 'event') {
+          color = '#fc4';
+        }
+
+        // 배경 원
+        this.ctx.fillStyle = color;
+        this.ctx.beginPath();
+        this.ctx.arc(
+          px + this.tileSize / 2,
+          py + this.tileSize / 2,
+          this.tileSize / 3,
+          0,
+          Math.PI * 2
+        );
+        this.ctx.fill();
+
+        // 이름 전체 표시 (작은 폰트)
+        this.ctx.fillStyle = '#000';
+        this.ctx.font = `${this.tileSize * 0.13}px Arial`;
+        this.ctx.textAlign = 'center';
+        this.ctx.textBaseline = 'middle';
+
+        const name = piece.name;
+        const maxWidth = this.tileSize * 0.6;
+        this.wrapText(name, px + this.tileSize / 2, py + this.tileSize / 2, maxWidth, this.tileSize * 0.15);
+
+        // 적이면 체력바 표시
+        if (piece.type === 'enemy') {
+          this.renderHealthBar(piece, px, py);
+        }
+      } else {
+        // 빈칸 - 숫자 표시
+        if (tile.adjacentEnemies > 0) {
+          this.ctx.fillStyle = this.getNumberColor(tile.adjacentEnemies);
+          this.ctx.font = `bold ${this.tileSize * 0.4}px Arial`;
+          this.ctx.textAlign = 'center';
+          this.ctx.textBaseline = 'middle';
+          this.ctx.fillText(
+            tile.adjacentEnemies,
+            px + this.tileSize / 2,
+            py + this.tileSize / 2
+          );
+        }
       }
-
-      this.ctx.fillStyle = color;
-      this.ctx.beginPath();
-      this.ctx.arc(
-        px + this.tileSize / 2,
-        py + this.tileSize / 2,
-        this.tileSize / 3,
-        0,
-        Math.PI * 2
-      );
-      this.ctx.fill();
-
-      // 텍스트 (이름 첫 글자)
-      this.ctx.fillStyle = '#000';
-      this.ctx.font = `${this.tileSize / 4}px Arial`;
-      this.ctx.textAlign = 'center';
-      this.ctx.textBaseline = 'middle';
-      this.ctx.fillText(
-        piece.name.charAt(0),
-        px + this.tileSize / 2,
-        py + this.tileSize / 2
-      );
     }
+  }
+
+  wrapText(text, x, y, maxWidth, lineHeight) {
+    const words = text.split('');
+    let line = '';
+    const lines = [];
+
+    for (let i = 0; i < words.length; i++) {
+      const testLine = line + words[i];
+      const metrics = this.ctx.measureText(testLine);
+
+      if (metrics.width > maxWidth && i > 0) {
+        lines.push(line);
+        line = words[i];
+      } else {
+        line = testLine;
+      }
+    }
+    lines.push(line);
+
+    const startY = y - ((lines.length - 1) * lineHeight) / 2;
+    for (let i = 0; i < lines.length; i++) {
+      this.ctx.fillText(lines[i], x, startY + i * lineHeight);
+    }
+  }
+
+  renderHealthBar(enemy, px, py) {
+    const barWidth = this.tileSize * 0.6;
+    const barHeight = this.tileSize * 0.08;
+    const barX = px + (this.tileSize - barWidth) / 2;
+    const barY = py + this.tileSize * 0.1;
+
+    // 배경
+    this.ctx.fillStyle = '#333';
+    this.ctx.fillRect(barX, barY, barWidth, barHeight);
+
+    // HP 바
+    const hpRatio = enemy.hp / enemy.maxHp;
+    this.ctx.fillStyle = '#0f0';
+    this.ctx.fillRect(barX, barY, barWidth * hpRatio, barHeight);
+
+    // 테두리
+    this.ctx.strokeStyle = '#000';
+    this.ctx.lineWidth = 1;
+    this.ctx.strokeRect(barX, barY, barWidth, barHeight);
+
+    // HP 텍스트
+    this.ctx.fillStyle = '#fff';
+    this.ctx.font = `${this.tileSize * 0.1}px Arial`;
+    this.ctx.textAlign = 'center';
+    this.ctx.textBaseline = 'middle';
+    this.ctx.fillText(
+      `${enemy.hp}/${enemy.maxHp}`,
+      barX + barWidth / 2,
+      barY + barHeight / 2
+    );
+  }
+
+  getNumberColor(num) {
+    const colors = ['#000', '#0000ff', '#008000', '#ff0000', '#800080', '#800000', '#008080', '#000000', '#808080'];
+    return colors[Math.min(num, colors.length - 1)];
   }
 
   updateStats() {

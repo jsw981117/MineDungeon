@@ -4,6 +4,8 @@ class Tile {
     this.y = y;
     this.piece = null;
     this.block = null;
+    this.adjacentEnemies = 0;
+    this.explored = false;
   }
 
   setPiece(piece) {
