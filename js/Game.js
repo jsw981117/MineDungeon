@@ -15,14 +15,7 @@ class Game {
   }
 
   initDeck() {
-    // 적 추가
-    if (typeof ENEMIES_DATA !== 'undefined') {
-      ENEMIES_DATA.forEach(data => {
-        this.deck.addPiece(new Enemy(data));
-      });
-    }
-
-    // 아이템 추가
+    // 첫 시작: 아이템만 추가 (적은 매 층마다 추가)
     if (typeof ITEMS_DATA !== 'undefined') {
       ITEMS_DATA.forEach(data => {
         this.deck.addPiece(new Item(data));
@@ -31,8 +24,15 @@ class Game {
   }
 
   startFloor() {
-    const deckCopy = this.deck.clone();
-    const floor = new Floor(this.currentFloor, this.board, deckCopy);
+    // 매 층마다 적을 새로 추가 (이전 층의 적은 모두 배치되었으므로)
+    if (typeof ENEMIES_DATA !== 'undefined') {
+      ENEMIES_DATA.forEach(data => {
+        this.deck.addEnemy(new Enemy(data));
+      });
+    }
+
+    // 덱을 직접 사용 (복사하지 않음 - 아이템 이월을 위해)
+    const floor = new Floor(this.currentFloor, this.board, this.deck);
     floor.generate();
     this.uiManager.updateStats();
     this.uiManager.render();
