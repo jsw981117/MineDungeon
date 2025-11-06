@@ -7,10 +7,9 @@ class Event extends Piece {
   interact(player, game) {
     // 특수 이벤트 처리
     if (this.effect === 'next_floor') {
-      // 계단: 층 완료 보상 → 다음 층 이동
-      game.isFloorClear = true;
-      game.showItemReward(true); // callback=true (적 추가 팝업 이어짐)
-      return true; // 계단 제거
+      // 계단: 확인 팝업 먼저 표시
+      showStairConfirmPopup();
+      return false; // 확인 전까지 계단 유지
     }
 
     if (this.id === 'treasure') {

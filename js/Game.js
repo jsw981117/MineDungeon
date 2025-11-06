@@ -123,6 +123,33 @@ class Game {
         this.gameOver();
       }
     }
+
+    // 모든 적 발견 메커닉 체크
+    this.checkEnemyWipeout();
+  }
+
+  checkEnemyWipeout() {
+    const tiles = this.board.getTiles();
+    const blockedTiles = tiles.filter(t => t.hasBlock());
+
+    // 블록이 없으면 체크 안함
+    if (blockedTiles.length === 0) return;
+
+    // 모든 블록 타일이 적인지 확인
+    const allEnemies = blockedTiles.every(tile => {
+      return tile.hasPiece() && tile.piece.type === 'enemy';
+    });
+
+    if (allEnemies) {
+      // 모든 블록 제거하고 적 공개
+      blockedTiles.forEach(tile => {
+        tile.removeBlock();
+        tile.explored = true;
+      });
+
+      this.uiManager.render();
+      alert('모든 적이 발견되었습니다!');
+    }
   }
 
   floodFill(x, y) {

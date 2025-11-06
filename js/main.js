@@ -6,6 +6,7 @@ window.addEventListener('DOMContentLoaded', () => {
   game.init(canvas);
 
   setupSettingsButton();
+  setupDeckButton();
 });
 
 function setupSettingsButton() {
@@ -13,6 +14,15 @@ function setupSettingsButton() {
   if (settingsBtn) {
     settingsBtn.addEventListener('click', () => {
       showSettingsPopup();
+    });
+  }
+}
+
+function setupDeckButton() {
+  const deckBtn = document.getElementById('deckBtn');
+  if (deckBtn) {
+    deckBtn.addEventListener('click', () => {
+      showDeckPopup();
     });
   }
 }
@@ -85,6 +95,34 @@ function closePopup() {
   if (popup) {
     popup.classList.remove('active');
   }
+}
+
+// 계단 확인 팝업
+function showStairConfirmPopup() {
+  const popup = document.getElementById('popup');
+  const content = document.querySelector('.popup-content');
+
+  if (!popup || !content) return;
+
+  content.innerHTML = `
+    <div class="popup-title">계단 발견</div>
+    <div class="popup-text">다음 층으로 이동하시겠습니까?</div>
+    <div class="popup-buttons">
+      <button class="popup-button" onclick="confirmStair(true)">예</button>
+      <button class="popup-button" onclick="confirmStair(false)">아니오</button>
+    </div>
+  `;
+
+  popup.classList.add('active');
+}
+
+function confirmStair(proceed) {
+  if (proceed) {
+    // 층 완료 보상 시작
+    game.isFloorClear = true;
+    game.showItemReward(true);
+  }
+  closePopup();
 }
 
 // 능력치 증가 보상 팝업 (레벨업)
@@ -234,3 +272,147 @@ function selectEnemyReward(index) {
     game.nextFloor();
   }
 }
+
+// 덱 확인 팝업
+function showDeckPopup() {
+  const popup = document.getElementById('popup');
+  const content = document.querySelector('.popup-content');
+
+  if (!popup || !content) return;
+
+  const enemies = game.deck.getAllEnemies();
+  const items = game.deck.getAllItems();
+
+  let enemiesHTML = '<div class="deck-section"><div class="deck-section-title">적 목록 (다음 층 배치)</div><div class="deck-list">';
+  if (enemies.length === 0) {
+    enemiesHTML += '<div class="deck-empty">없음</div>';
+  } else {
+    enemies.forEach((enemy, index) => {
+      enemiesHTML += `
+        <div class="deck-item enemy-item" onclick="showPieceTooltip(event, 'enemy', ${index})">
+          <div class="deck-item-name">${enemy.name}</div>
+          <div class="deck-item-hp">HP: ${enemy.hp}/${enemy.maxHp}</div>
+        </div>
+      `;
+    });
+  }
+  enemiesHTML += '</div></div>';
+
+  let itemsHTML = '<div class="deck-section"><div class="deck-section-title">아이템 목록 (배치 대기)</div><div class="deck-list">';
+  if (items.length === 0) {
+    itemsHTML += '<div class="deck-empty">없음</div>';
+  } else {
+    items.forEach((item, index) => {
+      itemsHTML += `
+        <div class="deck-item item-item" onclick="showPieceTooltip(event, 'item', ${index})">
+          <div class="deck-item-name">${item.name}</div>
+          <div class="deck-item-durability">내구도: ${item.durability}</div>
+        </div>
+      `;
+    });
+  }
+  itemsHTML += '</div></div>';
+
+  content.innerHTML = `
+    <div class="popup-title">덱 확인</div>
+    ${enemiesHTML}
+    ${itemsHTML}
+    <div class="popup-buttons">
+      <button class="popup-button" onclick="closePopup()">닫기</button>
+    </div>
+  `;
+
+  popup.classList.add('active');
+}
+
+// 피스 정보 툴팁 표시
+function showPieceTooltip(event, type, index) {
+  event.stopPropagation();
+
+  // 기존 툴팁 제거
+  const existingTooltip = document.querySelector('.piece-tooltip');
+  if (existingTooltip) {
+    existingTooltip.remove();
+    return; // 같은 피스를 다시 클릭하면 토글
+  }
+
+  let piece;
+  if (type === 'enemy') {
+    piece = game.deck.getAllEnemies()[index];
+  } else if (type === 'item') {
+    piece = game.deck.getAllItems()[index];
+  }
+
+  if (!piece) return;
+
+  // 툴팁 생성
+  const tooltip = document.createElement('div');
+  tooltip.className = 'piece-tooltip';
+
+  let tooltipHTML = `<div class="tooltip-title">${piece.name}</div>`;
+
+  if (type === 'enemy') {
+    tooltipHTML += `
+      <div class="tooltip-stat">HP: ${piece.hp}/${piece.maxHp}</div>
+      <div class="tooltip-stat">공격력: ${piece.attack}</div>
+      <div class="tooltip-stat">방어력: ${piece.defense}</div>
+      <div class="tooltip-stat">경험치: ${piece.expReward}</div>
+    `;
+    if (piece.critRate > 0) tooltipHTML += `<div class="tooltip-stat">치명타율: ${piece.critRate}%</div>`;
+    if (piece.evasion > 0) tooltipHTML += `<div class="tooltip-stat">회피율: ${piece.evasion}%</div>`;
+    if (piece.effect) tooltipHTML += `<div class="tooltip-effect">효과: ${piece.effect}</div>`;
+  } else if (type === 'item') {
+    tooltipHTML += `
+      <div class="tooltip-stat">내구도: ${piece.durability}</div>
+      <div class="tooltip-effect">효과: ${piece.effect}</div>
+    `;
+  }
+
+  tooltip.innerHTML = tooltipHTML;
+  document.body.appendChild(tooltip);
+
+  // 위치 계산 (클릭한 요소 근처)
+  const target = event.currentTarget;
+  const targetRect = target.getBoundingClientRect();
+
+  // 툴팁을 일단 화면에 추가해서 크기 계산
+  const tooltipRect = tooltip.getBoundingClientRect();
+
+  // 기본 위치: 클릭한 요소 오른쪽
+  let left = targetRect.right + 10;
+  let top = targetRect.top;
+
+  // 오른쪽 경계 체크
+  if (left + tooltipRect.width > window.innerWidth) {
+    // 왼쪽에 표시
+    left = targetRect.left - tooltipRect.width - 10;
+  }
+
+  // 왼쪽 경계 체크
+  if (left < 0) {
+    // 요소 아래에 표시
+    left = targetRect.left;
+    top = targetRect.bottom + 10;
+  }
+
+  // 하단 경계 체크
+  if (top + tooltipRect.height > window.innerHeight) {
+    top = window.innerHeight - tooltipRect.height - 10;
+  }
+
+  // 상단 경계 체크
+  if (top < 0) {
+    top = 10;
+  }
+
+  tooltip.style.left = left + 'px';
+  tooltip.style.top = top + 'px';
+}
+
+// 팝업 닫을 때 툴팁도 제거
+document.addEventListener('click', (e) => {
+  if (!e.target.closest('.deck-item') && !e.target.closest('.piece-tooltip')) {
+    const tooltip = document.querySelector('.piece-tooltip');
+    if (tooltip) tooltip.remove();
+  }
+});

@@ -71,6 +71,22 @@ body.landscape #gameContainer {
   display: flex;
   gap: min(2vw, 20px);
   flex-shrink: 0;
+  justify-content: center;
+  align-items: center;
+}
+
+.panel-button {
+  padding: calc(min(1.5vh, 12px) * var(--button-scale)) calc(min(3vw, 24px) * var(--button-scale));
+  background-color: var(--color-button);
+  color: var(--color-text);
+  border: none;
+  cursor: pointer;
+  font-size: calc(min(2vh, 16px) * var(--text-scale));
+  border-radius: min(0.5vh, 4px);
+}
+
+.panel-button:hover {
+  background-color: var(--color-button-hover);
 }
 
 #inventoryPanel, #artifactPanel {
@@ -192,4 +208,97 @@ body.landscape #gameContainer {
 
 #settingsBtn:hover {
   background-color: var(--color-button-hover);
+}
+
+/* 덱 확인 팝업 */
+.deck-section {
+  margin-bottom: min(3vh, 24px);
+}
+
+.deck-section-title {
+  font-size: calc(min(2.5vh, 20px) * var(--text-scale));
+  font-weight: bold;
+  margin-bottom: min(1.5vh, 12px);
+  color: var(--color-text);
+}
+
+.deck-list {
+  display: flex;
+  flex-direction: column;
+  gap: min(1vh, 8px);
+}
+
+.deck-empty {
+  font-size: calc(min(2vh, 16px) * var(--text-scale));
+  color: #888;
+  padding: min(1vh, 8px);
+}
+
+.deck-item {
+  background-color: var(--bg-block);
+  padding: min(1.5vh, 12px);
+  border-radius: min(0.5vh, 4px);
+  cursor: pointer;
+  border: 2px solid transparent;
+  transition: all 0.2s;
+}
+
+.deck-item:hover {
+  border-color: var(--color-button-hover);
+  background-color: rgba(100, 100, 100, 0.3);
+}
+
+.enemy-item {
+  border-left: 4px solid #c44;
+}
+
+.item-item {
+  border-left: 4px solid #4af;
+}
+
+.deck-item-name {
+  font-size: calc(min(2vh, 16px) * var(--text-scale));
+  font-weight: bold;
+  margin-bottom: min(0.5vh, 4px);
+}
+
+.deck-item-hp, .deck-item-durability {
+  font-size: calc(min(1.5vh, 12px) * var(--text-scale));
+  color: #aaa;
+}
+
+/* 피스 툴팁 */
+.piece-tooltip {
+  position: fixed;
+  background-color: rgba(0, 0, 0, 0.95);
+  border: 2px solid var(--color-button);
+  border-radius: min(0.5vh, 4px);
+  padding: min(2vh, 16px);
+  z-index: 2000;
+  min-width: 200px;
+  max-width: 300px;
+  pointer-events: none;
+}
+
+.tooltip-title {
+  font-size: calc(min(2.5vh, 20px) * var(--text-scale));
+  font-weight: bold;
+  margin-bottom: min(1vh, 8px);
+  color: var(--color-text);
+  border-bottom: 1px solid var(--color-button);
+  padding-bottom: min(0.5vh, 4px);
+}
+
+.tooltip-stat {
+  font-size: calc(min(1.8vh, 14px) * var(--text-scale));
+  margin-bottom: min(0.5vh, 4px);
+  color: #ccc;
+}
+
+.tooltip-effect {
+  font-size: calc(min(1.8vh, 14px) * var(--text-scale));
+  margin-top: min(1vh, 8px);
+  padding-top: min(1vh, 8px);
+  border-top: 1px solid #555;
+  color: #fc4;
 }
