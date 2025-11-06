@@ -86,3 +86,151 @@ function closePopup() {
     popup.classList.remove('active');
   }
 }
+
+// 능력치 증가 보상 팝업 (레벨업)
+function showStatRewardPopup(choices) {
+  const popup = document.getElementById('popup');
+  const content = document.querySelector('.popup-content');
+
+  if (!popup || !content) return;
+
+  let buttonsHTML = '';
+  choices.forEach((choice, index) => {
+    buttonsHTML += `<button class="popup-button reward-button" onclick="selectStatReward(${index})">${choice.text}</button>`;
+  });
+
+  content.innerHTML = `
+    <div class="popup-title">레벨업!</div>
+    <div class="popup-text">능력치를 선택하세요</div>
+    <div class="popup-buttons reward-buttons">
+      ${buttonsHTML}
+    </div>
+  `;
+
+  popup.classList.add('active');
+
+  // 선택지 저장 (선택 시 사용)
+  popup.dataset.choices = JSON.stringify(choices);
+}
+
+function selectStatReward(index) {
+  const popup = document.getElementById('popup');
+  const choices = JSON.parse(popup.dataset.choices);
+  const choice = choices[index];
+
+  // 능력치 적용
+  if (choice.stat === 'hp') {
+    game.player.maxHp += choice.value;
+    game.player.hp += choice.value;
+  } else if (choice.stat === 'mp') {
+    game.player.maxMp += choice.value;
+    game.player.mp += choice.value;
+  } else if (choice.stat === 'attack') {
+    game.player.attack += choice.value;
+  } else if (choice.stat === 'magic') {
+    game.player.magic += choice.value;
+  } else if (choice.stat === 'defense') {
+    game.player.defense += choice.value;
+  } else if (choice.stat === 'critRate') {
+    game.player.critRate += choice.value;
+  } else if (choice.stat === 'critDamage') {
+    game.player.critDamage += choice.value;
+  } else if (choice.stat === 'evasion') {
+    game.player.evasion += choice.value;
+  }
+
+  // 영구 스탯에 기록
+  game.player.increasePermanent(choice.stat, choice.value);
+
+  game.uiManager.updateStats();
+  closePopup();
+}
+
+// 아티팩트/아이템 보상 팝업 (보물상자/층 완료)
+function showItemRewardPopup(choices, callback) {
+  const popup = document.getElementById('popup');
+  const content = document.querySelector('.popup-content');
+
+  if (!popup || !content) return;
+
+  let buttonsHTML = '';
+  choices.forEach((choice, index) => {
+    const typeName = choice.type === 'artifact' ? '[아티팩트]' : '[아이템]';
+    buttonsHTML += `<button class="popup-button reward-button" onclick="selectItemReward(${index})">${typeName} ${choice.name}</button>`;
+  });
+
+  content.innerHTML = `
+    <div class="popup-title">보상 선택</div>
+    <div class="popup-text">아이템 또는 아티팩트를 선택하세요</div>
+    <div class="popup-buttons reward-buttons">
+      ${buttonsHTML}
+    </div>
+  `;
+
+  popup.classList.add('active');
+  popup.dataset.choices = JSON.stringify(choices);
+  popup.dataset.callback = callback ? 'true' : 'false';
+}
+
+function selectItemReward(index) {
+  const popup = document.getElementById('popup');
+  const choices = JSON.parse(popup.dataset.choices);
+  const hasCallback = popup.dataset.callback === 'true';
+  const choice = choices[index];
+
+  if (choice.type === 'item') {
+    // 덱에 아이템 추가
+    game.deck.addItem(new Item(choice));
+  } else if (choice.type === 'artifact') {
+    // 아티팩트 추가 (추후 구현)
+    console.log('아티팩트 획득:', choice.name);
+  }
+
+  closePopup();
+
+  // 콜백이 있으면 실행 (층 완료 시 적 추가 팝업으로 이어짐)
+  if (hasCallback) {
+    game.showEnemyAddReward();
+  }
+}
+
+// 적 추가 보상 팝업 (층 완료)
+function showEnemyRewardPopup(choices) {
+  const popup = document.getElementById('popup');
+  const content = document.querySelector('.popup-content');
+
+  if (!popup || !content) return;
+
+  let buttonsHTML = '';
+  choices.forEach((choice, index) => {
+    buttonsHTML += `<button class="popup-button reward-button" onclick="selectEnemyReward(${index})">${choice.name} (HP:${choice.hp})</button>`;
+  });
+
+  content.innerHTML = `
+    <div class="popup-title">덱 강화</div>
+    <div class="popup-text">덱에 추가할 적을 선택하세요</div>
+    <div class="popup-buttons reward-buttons">
+      ${buttonsHTML}
+    </div>
+  `;
+
+  popup.classList.add('active');
+  popup.dataset.choices = JSON.stringify(choices);
+}
+
+function selectEnemyReward(index) {
+  const popup = document.getElementById('popup');
+  const choices = JSON.parse(popup.dataset.choices);
+  const choice = choices[index];
+
+  // 덱에 적 추가
+  game.deck.addEnemy(new Enemy(choice));
+
+  closePopup();
+
+  // 층 완료 보상인 경우 다음 층으로 이동
+  if (game.isFloorClear) {
+    game.isFloorClear = false;
+    game.nextFloor();
+  }
+}

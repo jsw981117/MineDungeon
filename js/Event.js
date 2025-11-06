@@ -5,7 +5,21 @@ class Event extends Piece {
   }
 
   interact(player, game) {
-    // 이벤트 UI 표시
+    // 특수 이벤트 처리
+    if (this.effect === 'next_floor') {
+      // 계단: 층 완료 보상 → 다음 층 이동
+      game.isFloorClear = true;
+      game.showItemReward(true); // callback=true (적 추가 팝업 이어짐)
+      return true; // 계단 제거
+    }
+
+    if (this.id === 'treasure') {
+      // 보물상자: 아이템/아티팩트 선택
+      game.showItemReward(false);
+      return true; // 보물상자 제거
+    }
+
+    // 일반 효과 적용
     if (this.effect) {
       EffectHandler.apply(this.effect, this, { player, game, event: 'on_interact' });
     }

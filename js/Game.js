@@ -6,6 +6,7 @@ class Game {
     this.currentFloor = 1;
     this.uiManager = null;
     this.settings = new Settings();
+    this.isFloorClear = false; // 층 완료 플래그
   }
 
   init(canvas) {
@@ -192,12 +193,52 @@ class Game {
   }
 
   showLevelUpReward() {
-    console.log(`레벨 업! 현재 레벨: ${this.player.level}`);
-    // main.js에서 팝업 UI로 구현 예정
-    // 4가지 중 2~3개 선택지:
-    // 1. 아티팩트 획득
-    // 2. 능력치 증가 (HP+5, ATK+1, DEF+1 등)
-    // 3. 아이템 획득 (덱에 추가)
-    // 4. 적 추가 (덱에 추가)
+    // 능력치 증가 선택지 생성 (3개 무작위)
+    const statOptions = [
+      { stat: 'hp', text: 'HP +5', value: 5 },
+      { stat: 'mp', text: 'MP +5', value: 5 },
+      { stat: 'attack', text: '공격력 +1', value: 1 },
+      { stat: 'magic', text: '마법력 +1', value: 1 },
+      { stat: 'defense', text: '방어력 +1', value: 1 },
+      { stat: 'critRate', text: '치명타율 +3%', value: 3 },
+      { stat: 'critDamage', text: '치명타 피해 +10%', value: 10 },
+      { stat: 'evasion', text: '회피율 +3%', value: 3 }
+    ];
+
+    // 무작위로 3개 선택
+    const shuffled = [...statOptions].sort(() => Math.random() - 0.5);
+    const choices = shuffled.slice(0, 3);
+
+    showStatRewardPopup(choices);
+  }
+
+  showItemReward(hasCallback = false) {
+    // 아이템 선택지 생성 (3개 무작위)
+    const itemChoices = [];
+
+    // 아이템 풀에서 무작위 선택
+    if (typeof ITEMS_DATA !== 'undefined') {
+      const shuffled = [...ITEMS_DATA].sort(() => Math.random() - 0.5);
+      shuffled.slice(0, 3).forEach(itemData => {
+        itemChoices.push({ ...itemData, type: 'item' });
+      });
+    }
+
+    // 아티팩트는 추후 구현
+    // 현재는 아이템만 3개 표시
+
+    showItemRewardPopup(itemChoices, hasCallback);
+  }
+
+  showEnemyAddReward() {
+    // 적 선택지 생성 (3개 무작위)
+    if (typeof ENEMIES_DATA === 'undefined' || ENEMIES_DATA.length === 0) {
+      return;
+    }
+
+    const shuffled = [...ENEMIES_DATA].sort(() => Math.random() - 0.5);
+    const choices = shuffled.slice(0, Math.min(3, ENEMIES_DATA.length));
+
+    showEnemyRewardPopup(choices);
   }
 }

@@ -164,6 +164,18 @@ body.landscape #gameContainer {
   background-color: var(--color-button-hover);
 }
 
+/* 보상 선택 팝업 */
+.reward-buttons {
+  flex-direction: column;
+  align-items: stretch;
+}
+
+.reward-button {
+  width: 100%;
+  text-align: left;
+  padding: calc(min(2vh, 16px) * var(--button-scale)) calc(min(3vw, 24px) * var(--button-scale));
+}
+
 /* 설정 버튼 */
 #settingsBtn {
   position: fixed;

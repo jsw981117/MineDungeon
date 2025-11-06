@@ -296,11 +296,17 @@ class UIManager {
     const player = this.game.player;
     const floor = this.game.currentFloor;
 
-    // DOM 업데이트는 index.html에 요소가 생성된 후 구현
     const floorEl = document.getElementById('floorText');
     const hpEl = document.getElementById('hpText');
+    const mpEl = document.getElementById('mpText');
+    const expEl = document.getElementById('expText');
 
     if (floorEl) floorEl.textContent = `Floor ${floor}`;
     if (hpEl) hpEl.textContent = `HP: ${player.getHp()}/${player.getMaxHp()}`;
+    if (mpEl) mpEl.textContent = `MP: ${player.mp}/${player.maxMp}`;
+    if (expEl) {
+      const expPercent = Math.floor((player.exp / player.expToNext) * 100);
+      expEl.textContent = `LV${player.level} [${expPercent}%]`;
+    }
   }
 }
