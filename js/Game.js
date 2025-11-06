@@ -58,7 +58,20 @@ class Game {
       // 피스 상호작용
       if (tile.hasPiece()) {
         const piece = tile.piece;
-        const shouldRemove = piece.interact(this.player, this);
+        let shouldRemove = false;
+
+        // 적이면 기습 공격
+        if (piece.type === 'enemy') {
+          const playerDied = piece.ambush(this.player, this);
+          if (playerDied) {
+            this.gameOver();
+            return;
+          }
+          // 기습 후에는 적이 남아있음 (플레이어가 다시 클릭해야 공격)
+        } else {
+          // 아이템/이벤트는 일반 상호작용
+          shouldRemove = piece.interact(this.player, this);
+        }
 
         if (shouldRemove) {
           tile.removePiece();
@@ -66,11 +79,6 @@ class Game {
 
         this.uiManager.updateStats();
         this.uiManager.render();
-
-        // 플레이어 사망 체크
-        if (this.player.isDead()) {
-          this.gameOver();
-        }
       } else {
         // 빈칸 - 연쇄 탐색
         if (tile.adjacentEnemies === 0) {
@@ -84,7 +92,23 @@ class Game {
     // 이미 탐색된 타일 - 피스가 있으면 상호작용
     if (tile.explored && tile.hasPiece()) {
       const piece = tile.piece;
-      const shouldRemove = piece.interact(this.player, this);
+      let shouldRemove = false;
+
+      // 적이면 플레이어 선공
+      if (piece.type === 'enemy') {
+        shouldRemove = piece.playerAttack(this.player, this);
+
+        // 레벨업 체크
+        if (this.player.exp >= this.player.expToNext) {
+          const leveledUp = this.player.levelUp();
+          if (leveledUp) {
+            this.showLevelUpReward();
+          }
+        }
+      } else {
+        // 아이템/이벤트는 일반 상호작용
+        shouldRemove = piece.interact(this.player, this);
+      }
 
       if (shouldRemove) {
         tile.removePiece();
@@ -165,5 +189,15 @@ class Game {
   showShop() {
     // 추후 구현
     console.log('Shop opened');
+  }
+
+  showLevelUpReward() {
+    console.log(`레벨 업! 현재 레벨: ${this.player.level}`);
+    // main.js에서 팝업 UI로 구현 예정
+    // 4가지 중 2~3개 선택지:
+    // 1. 아티팩트 획득
+    // 2. 능력치 증가 (HP+5, ATK+1, DEF+1 등)
+    // 3. 아이템 획득 (덱에 추가)
+    // 4. 적 추가 (덱에 추가)
   }
 }
