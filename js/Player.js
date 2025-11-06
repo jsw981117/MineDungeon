@@ -21,7 +21,7 @@ class Player {
     // 성장 시스템
     this.level = 1;
     this.exp = 0;
-    this.expToNext = 100;
+    this.expToNext = 3;
 
     // 인벤토리
     this.inventory = [];
@@ -95,10 +95,13 @@ class Player {
   }
 
   levelUp() {
-    this.level++;
-    this.exp -= this.expToNext;
-    this.expToNext = Math.floor(this.expToNext * 1.5);
-    return true;
+    if (this.exp >= this.expToNext) {
+      this.level++;
+      this.exp = 0; // 경험치 리셋
+      this.expToNext = 3 + (this.level - 1); // 3, 4, 5, 6...
+      return true;
+    }
+    return false;
   }
 
   // 영구 능력치 증가

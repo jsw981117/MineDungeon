@@ -1,10 +1,12 @@
 class Enemy extends Piece {
   constructor(data) {
     super(data);
+    this.baseHp = data.hp; // 기본 HP (스케일링 기준)
     this.hp = data.hp;
     this.maxHp = data.hp;
     this.attack = data.attack || 1;
     this.defense = data.defense || 0;
+    this.durability = data.durability || 1;
     this.expReward = data.expReward || (this.maxHp * 10);
 
     // 선택적 능력치 (강한 적용)
@@ -58,10 +60,17 @@ class Enemy extends Piece {
         EffectHandler.apply(this.effect, this, { player, game, event: 'on_death' });
       }
 
-      // 경험치 획득
-      player.gainExp(this.expReward);
+      // 경험치 획득 (고정 1)
+      player.gainExp(1);
 
-      return true; // 적 제거
+      // 내구도 감소
+      this.durability--;
+      if (this.durability <= 0) {
+        game.deck.removeEnemy(this);
+        console.log(`${this.name}이(가) 덱에서 제거되었습니다!`);
+      }
+
+      return true; // 타일에서 제거
     }
 
     // 적이 반격

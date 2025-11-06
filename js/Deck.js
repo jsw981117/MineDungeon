@@ -22,15 +22,23 @@ class Deck {
 
   removePiece(piece) {
     if (piece.type === 'enemy') {
-      const index = this.enemies.indexOf(piece);
-      if (index > -1) {
-        this.enemies.splice(index, 1);
-      }
+      this.removeEnemy(piece);
     } else if (piece.type === 'item') {
-      const index = this.items.indexOf(piece);
-      if (index > -1) {
-        this.items.splice(index, 1);
-      }
+      this.removeItem(piece);
+    }
+  }
+
+  removeEnemy(enemy) {
+    const index = this.enemies.indexOf(enemy);
+    if (index > -1) {
+      this.enemies.splice(index, 1);
+    }
+  }
+
+  removeItem(item) {
+    const index = this.items.indexOf(item);
+    if (index > -1) {
+      this.items.splice(index, 1);
     }
   }
 

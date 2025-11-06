@@ -97,34 +97,6 @@ function closePopup() {
   }
 }
 
-// 계단 확인 팝업
-function showStairConfirmPopup() {
-  const popup = document.getElementById('popup');
-  const content = document.querySelector('.popup-content');
-
-  if (!popup || !content) return;
-
-  content.innerHTML = `
-    <div class="popup-title">계단 발견</div>
-    <div class="popup-text">다음 층으로 이동하시겠습니까?</div>
-    <div class="popup-buttons">
-      <button class="popup-button" onclick="confirmStair(true)">예</button>
-      <button class="popup-button" onclick="confirmStair(false)">아니오</button>
-    </div>
-  `;
-
-  popup.classList.add('active');
-}
-
-function confirmStair(proceed) {
-  if (proceed) {
-    // 층 완료 보상 시작
-    game.isFloorClear = true;
-    game.showItemReward(true);
-  }
-  closePopup();
-}
-
 // 능력치 증가 보상 팝업 (레벨업)
 function showStatRewardPopup(choices) {
   const popup = document.getElementById('popup');

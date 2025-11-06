@@ -6,6 +6,7 @@ const ENEMIES_DATA = [
     hp: 3,
     attack: 1,
     defense: 0,
+    durability: 3,
     expReward: 30,
     effect: null
   },
@@ -16,6 +17,7 @@ const ENEMIES_DATA = [
     hp: 5,
     attack: 2,
     defense: 1,
+    durability: 2,
     expReward: 50,
     effect: null
   },
@@ -26,6 +28,7 @@ const ENEMIES_DATA = [
     hp: 2,
     attack: 1,
     defense: 0,
+    durability: 5,
     expReward: 20,
     effect: 'split_on_death'
   },
@@ -36,6 +39,7 @@ const ENEMIES_DATA = [
     hp: 4,
     attack: 2,
     defense: 1,
+    durability: 2,
     expReward: 60,
     critRate: 10,
     evasion: 5,

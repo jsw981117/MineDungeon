@@ -8,6 +8,8 @@ class UIManager {
     this.offsetY = 0;
     this.holdTimer = null;
     this.holdStartPos = null;
+    this.hoverTile = null; // 현재 hover 중인 타일
+    this.tooltipVisible = false;
     this.setupCanvas();
     this.setupEvents();
   }
@@ -27,8 +29,14 @@ class UIManager {
     // 마우스 이벤트
     this.canvas.addEventListener('mousedown', (e) => this.handlePointerDown(e, e.clientX, e.clientY));
     this.canvas.addEventListener('mouseup', (e) => this.handlePointerUp(e, e.clientX, e.clientY));
-    this.canvas.addEventListener('mousemove', (e) => this.handlePointerMove(e, e.clientX, e.clientY));
-    this.canvas.addEventListener('mouseleave', () => this.cancelHold());
+    this.canvas.addEventListener('mousemove', (e) => {
+      this.handlePointerMove(e, e.clientX, e.clientY);
+      this.handleHover(e.clientX, e.clientY);
+    });
+    this.canvas.addEventListener('mouseleave', () => {
+      this.cancelHold();
+      this.hideTileTooltip();
+    });
 
     // 우클릭
     this.canvas.addEventListener('contextmenu', (e) => {
@@ -75,13 +83,21 @@ class UIManager {
     const tileX = Math.floor(x / this.tileSize);
     const tileY = Math.floor(y / this.tileSize);
 
-    this.holdStartPos = { x: tileX, y: tileY };
+    this.holdStartPos = { x: tileX, y: tileY, clientX, clientY };
+
+    const tile = this.game.board.getTile(tileX, tileY);
 
     // 홀드 타이머 시작
     const holdDuration = this.game.settings.getHoldDuration() * 1000;
     this.holdTimer = setTimeout(() => {
-      this.game.onTileFlag(tileX, tileY);
-      this.render();
+      if (tile && tile.hasBlock()) {
+        // 블럭이 있으면 마킹
+        this.game.onTileFlag(tileX, tileY);
+        this.render();
+      } else if (tile && tile.explored && tile.hasPiece()) {
+        // 피스가 있으면 툴팁 표시
+        this.showTileTooltip(tile.piece, clientX, clientY);
+      }
       this.holdTimer = null;
     }, holdDuration);
   }
@@ -307,6 +323,95 @@ class UIManager {
     if (expEl) {
       const expPercent = Math.floor((player.exp / player.expToNext) * 100);
       expEl.textContent = `LV${player.level} [${expPercent}%]`;
+    }
+  }
+
+  handleHover(clientX, clientY) {
+    const rect = this.canvas.getBoundingClientRect();
+    const x = clientX - rect.left;
+    const y = clientY - rect.top;
+    const tileX = Math.floor(x / this.tileSize);
+    const tileY = Math.floor(y / this.tileSize);
+
+    const tile = this.game.board.getTile(tileX, tileY);
+
+    // 탐색된 타일의 피스에만 툴팁 표시
+    if (tile && tile.explored && tile.hasPiece() && !tile.hasBlock()) {
+      if (!this.hoverTile || this.hoverTile.x !== tileX || this.hoverTile.y !== tileY) {
+        this.hoverTile = { x: tileX, y: tileY };
+        this.showTileTooltip(tile.piece, clientX, clientY);
+      }
+    } else {
+      if (this.hoverTile) {
+        this.hoverTile = null;
+        this.hideTileTooltip();
+      }
+    }
+  }
+
+  showTileTooltip(piece, clientX, clientY) {
+    // 기존 툴팁 제거
+    this.hideTileTooltip();
+
+    const tooltip = document.createElement('div');
+    tooltip.className = 'piece-tooltip tile-tooltip';
+    tooltip.id = 'tileTooltip';
+
+    let tooltipHTML = `<div class="tooltip-title">${piece.name}</div>`;
+
+    if (piece.type === 'enemy') {
+      tooltipHTML += `
+        <div class="tooltip-stat">HP: ${piece.hp}/${piece.maxHp}</div>
+        <div class="tooltip-stat">공격력: ${piece.attack}</div>
+        <div class="tooltip-stat">방어력: ${piece.defense}</div>
+      `;
+      if (piece.critRate > 0) tooltipHTML += `<div class="tooltip-stat">치명타율: ${piece.critRate}%</div>`;
+      if (piece.evasion > 0) tooltipHTML += `<div class="tooltip-stat">회피율: ${piece.evasion}%</div>`;
+      if (piece.durability) tooltipHTML += `<div class="tooltip-stat">내구도: ${piece.durability}</div>`;
+      if (piece.effect) tooltipHTML += `<div class="tooltip-effect">효과: ${piece.effect}</div>`;
+    } else if (piece.type === 'item') {
+      tooltipHTML += `
+        <div class="tooltip-stat">내구도: ${piece.durability}</div>
+        <div class="tooltip-effect">효과: ${piece.effect}</div>
+      `;
+    } else if (piece.type === 'event') {
+      if (piece.effect) tooltipHTML += `<div class="tooltip-effect">효과: ${piece.effect}</div>`;
+    }
+
+    tooltip.innerHTML = tooltipHTML;
+    document.body.appendChild(tooltip);
+
+    // 위치 계산
+    const tooltipRect = tooltip.getBoundingClientRect();
+    let left = clientX + 15;
+    let top = clientY + 15;
+
+    // 오른쪽 경계 체크
+    if (left + tooltipRect.width > window.innerWidth) {
+      left = clientX - tooltipRect.width - 15;
+    }
+
+    // 하단 경계 체크
+    if (top + tooltipRect.height > window.innerHeight) {
+      top = clientY - tooltipRect.height - 15;
+    }
+
+    // 왼쪽 경계 체크
+    if (left < 0) left = 10;
+
+    // 상단 경계 체크
+    if (top < 0) top = 10;
+
+    tooltip.style.left = left + 'px';
+    tooltip.style.top = top + 'px';
+    this.tooltipVisible = true;
+  }
+
+  hideTileTooltip() {
+    const tooltip = document.getElementById('tileTooltip');
+    if (tooltip) {
+      tooltip.remove();
+      this.tooltipVisible = false;
     }
   }
 }
