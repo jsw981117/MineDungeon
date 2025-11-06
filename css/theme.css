@@ -1,0 +1,22 @@
+:root {
+  /* 색상 팔레트 */
+  --bg-main: #222;
+  --bg-panel: #333;
+  --bg-tile: #ccc;
+  --bg-block: #555;
+  --color-text: #fff;
+  --color-enemy: #c44;
+  --color-item: #4af;
+  --color-event: #fc4;
+  --color-border: #000;
+  --color-button: #666;
+  --color-button-hover: #888;
+
+  /* 크기 변수 (설정으로 조절 가능) */
+  --text-scale: 1;
+  --button-scale: 1;
+
+  /* 최대 크기 제한 */
+  --max-container-width: 1200px;
+  --max-container-height: 900px;
+}

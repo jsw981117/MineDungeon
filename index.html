@@ -4,12 +4,70 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>MineDungeon</title>
+    <link rel="stylesheet" href="css/theme.css">
     <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/responsive.css">
 </head>
 <body>
-    <canvas id="gameCanvas"></canvas>
+    <div id="gameContainer">
+        <!-- 상단 패널 -->
+        <div id="topPanel">
+            <div class="stat" id="floorText">Floor 1</div>
+            <div class="stat" id="hpText">HP: 20/20</div>
+        </div>
 
+        <!-- 보드 영역 -->
+        <div id="boardContainer">
+            <canvas id="gameCanvas"></canvas>
+        </div>
+
+        <!-- 하단 패널 -->
+        <div id="bottomPanel">
+            <div id="inventoryPanel">
+                <div class="panel-title">인벤토리</div>
+                <div class="item-list" id="inventoryList"></div>
+            </div>
+            <div id="artifactPanel">
+                <div class="panel-title">아티팩트</div>
+                <div class="item-list" id="artifactList"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 설정 버튼 -->
+    <button id="settingsBtn">⚙</button>
+
+    <!-- 팝업 -->
+    <div id="popup">
+        <div class="popup-content"></div>
+    </div>
+
+    <!-- 데이터 파일 -->
+    <script src="js/data/enemies.js"></script>
+    <script src="js/data/items.js"></script>
+    <script src="js/data/events.js"></script>
+
+    <!-- 유틸리티 -->
     <script src="js/utils.js"></script>
+
+    <!-- 핵심 클래스 -->
+    <script src="js/Settings.js"></script>
+    <script src="js/Tile.js"></script>
+    <script src="js/Block.js"></script>
+    <script src="js/Piece.js"></script>
+    <script src="js/Enemy.js"></script>
+    <script src="js/Item.js"></script>
+    <script src="js/Event.js"></script>
+    <script src="js/Player.js"></script>
+    <script src="js/Artifact.js"></script>
+    <script src="js/Board.js"></script>
+    <script src="js/Deck.js"></script>
+    <script src="js/Floor.js"></script>
+    <script src="js/EffectHandler.js"></script>
+    <script src="js/UIManager.js"></script>
+    <script src="js/Game.js"></script>
+
+    <!-- 메인 -->
     <script src="js/main.js"></script>
 </body>
 </html>

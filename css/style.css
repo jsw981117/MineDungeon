@@ -1,0 +1,173 @@
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: Arial, sans-serif;
+  background-color: var(--bg-main);
+  color: var(--color-text);
+  overflow: hidden;
+  width: 100vw;
+  height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+#gameContainer {
+  width: 100vw;
+  height: 100vh;
+  max-width: var(--max-container-width);
+  max-height: var(--max-container-height);
+  display: flex;
+  flex-direction: column;
+}
+
+/* 상단 영역 */
+#topPanel {
+  background-color: var(--bg-panel);
+  padding: min(2vh, 16px);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+#topPanel .stat {
+  font-size: calc(min(2.5vh, 20px) * var(--text-scale));
+  font-weight: bold;
+}
+
+/* 중앙 보드 영역 */
+#boardContainer {
+  flex: 1;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: min(1vh, 10px);
+}
+
+#gameCanvas {
+  display: block;
+  background-color: var(--bg-main);
+}
+
+/* 하단 영역 */
+#bottomPanel {
+  background-color: var(--bg-panel);
+  padding: min(1.5vh, 12px);
+  display: flex;
+  gap: min(2vw, 20px);
+  flex-shrink: 0;
+}
+
+#inventoryPanel, #artifactPanel {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.panel-title {
+  font-size: calc(min(2vh, 16px) * var(--text-scale));
+  margin-bottom: min(1vh, 8px);
+}
+
+.item-list {
+  display: flex;
+  gap: min(1vw, 8px);
+  flex-wrap: wrap;
+}
+
+.item-slot {
+  width: calc(min(6vw, 48px) * var(--button-scale));
+  height: calc(min(6vw, 48px) * var(--button-scale));
+  background-color: var(--bg-block);
+  border: 2px solid var(--color-text);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  cursor: pointer;
+  font-size: calc(min(2vh, 16px) * var(--text-scale));
+}
+
+.item-slot:hover {
+  background-color: var(--color-button-hover);
+}
+
+/* 팝업 */
+#popup {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background-color: rgba(0, 0, 0, 0.8);
+  display: none;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+#popup.active {
+  display: flex;
+}
+
+.popup-content {
+  background-color: var(--bg-panel);
+  padding: min(4vh, 32px);
+  border-radius: min(1vh, 8px);
+  max-width: 80vw;
+  max-height: 80vh;
+  overflow-y: auto;
+}
+
+.popup-title {
+  font-size: calc(min(3vh, 24px) * var(--text-scale));
+  margin-bottom: min(2vh, 16px);
+}
+
+.popup-text {
+  font-size: calc(min(2vh, 16px) * var(--text-scale));
+  margin-bottom: min(2vh, 16px);
+  line-height: 1.5;
+}
+
+.popup-buttons {
+  display: flex;
+  gap: min(2vw, 16px);
+  flex-wrap: wrap;
+}
+
+.popup-button {
+  padding: calc(min(1.5vh, 12px) * var(--button-scale)) calc(min(3vw, 24px) * var(--button-scale));
+  background-color: var(--color-button);
+  color: var(--color-text);
+  border: none;
+  cursor: pointer;
+  font-size: calc(min(2vh, 16px) * var(--text-scale));
+  border-radius: min(0.5vh, 4px);
+}
+
+.popup-button:hover {
+  background-color: var(--color-button-hover);
+}
+
+/* 설정 버튼 */
+#settingsBtn {
+  position: fixed;
+  top: min(2vh, 16px);
+  right: min(2vw, 16px);
+  padding: calc(min(1vh, 10px) * var(--button-scale));
+  background-color: var(--color-button);
+  color: var(--color-text);
+  border: none;
+  cursor: pointer;
+  font-size: calc(min(2vh, 16px) * var(--text-scale));
+  z-index: 100;
+}
+
+#settingsBtn:hover {
+  background-color: var(--color-button-hover);
+}
