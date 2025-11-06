@@ -59,7 +59,6 @@ class Game {
       // 피스 상호작용
       if (tile.hasPiece()) {
         const piece = tile.piece;
-        let shouldRemove = false;
 
         // 적이면 기습 공격
         if (piece.type === 'enemy') {
@@ -69,14 +68,8 @@ class Game {
             return;
           }
           // 기습 후에는 적이 남아있음 (플레이어가 다시 클릭해야 공격)
-        } else {
-          // 아이템/이벤트는 일반 상호작용
-          shouldRemove = piece.interact(this.player, this);
         }
-
-        if (shouldRemove) {
-          tile.removePiece();
-        }
+        // 아이템/이벤트는 블록 제거 시 효과 발동하지 않음 (공개만 됨)
 
         this.uiManager.updateStats();
         this.uiManager.render();
@@ -147,8 +140,18 @@ class Game {
         tile.explored = true;
       });
 
+      // 플레이어가 공격력만큼 피해
+      this.player.takeDamage(this.player.attack);
+      console.log(`모든 적 발견! 플레이어가 ${this.player.attack} 피해를 입었습니다.`);
+
+      this.uiManager.updateStats();
       this.uiManager.render();
       alert('모든 적이 발견되었습니다!');
+
+      // 플레이어 사망 체크
+      if (this.player.isDead()) {
+        this.gameOver();
+      }
     }
   }
 
