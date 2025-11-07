@@ -146,7 +146,8 @@ class Game {
 
       this.uiManager.updateStats();
       this.uiManager.render();
-      alert('모든 적이 발견되었습니다!');
+
+      this.showMessage(`모든 적이 발견되었습니다! ${this.player.attack} 피해!`);
 
       // 플레이어 사망 체크
       if (this.player.isDead()) {
@@ -206,10 +207,31 @@ class Game {
   }
 
   gameOver() {
-    alert('Game Over!');
-    this.currentFloor = 1;
-    this.player = new Player();
-    this.startFloor();
+    this.showMessage('Game Over!');
+    setTimeout(() => {
+      this.currentFloor = 1;
+      this.player = new Player();
+      this.startFloor();
+    }, 2000);
+  }
+
+  showMessage(text, duration = 2000) {
+    // 기존 메시지 제거
+    const existingMsg = document.querySelector('.game-message');
+    if (existingMsg) {
+      existingMsg.remove();
+    }
+
+    // 새 메시지 생성
+    const message = document.createElement('div');
+    message.className = 'game-message';
+    message.textContent = text;
+    document.body.appendChild(message);
+
+    // 자동 제거
+    setTimeout(() => {
+      message.remove();
+    }, duration);
   }
 
   showEventChoices(event) {

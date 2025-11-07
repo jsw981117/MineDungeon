@@ -302,3 +302,31 @@ body.landscape #gameContainer {
   border-top: 1px solid #555;
   color: #fc4;
 }
+
+/* 게임 메시지 오버레이 */
+.game-message {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background-color: rgba(0, 0, 0, 0.9);
+  color: #fff;
+  padding: min(3vh, 24px) min(5vw, 40px);
+  border-radius: min(1vh, 8px);
+  font-size: calc(min(3vh, 24px) * var(--text-scale));
+  font-weight: bold;
+  z-index: 1500;
+  pointer-events: none;
+  animation: messageSlideIn 0.3s ease-out;
+}
+
+@keyframes messageSlideIn {
+  from {
+    opacity: 0;
+    transform: translate(-50%, -60%);
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, -50%);
+  }
+}
