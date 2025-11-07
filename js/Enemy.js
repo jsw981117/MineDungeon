@@ -13,6 +13,41 @@ class Enemy extends Piece {
     this.critRate = data.critRate || 0;
     this.critDamage = data.critDamage || 150;
     this.evasion = data.evasion || 0;
+
+    // 상태 효과 (키워드)
+    this.statusEffects = {}; // { poison: 3, burn: 2, freeze: true }
+  }
+
+  // 상태 효과 관리 (Player와 동일)
+  addStatusEffect(keyword, value = 1) {
+    if (KEYWORDS_DATA[keyword].stackable && KEYWORDS_DATA[keyword].hasValue) {
+      this.statusEffects[keyword] = (this.statusEffects[keyword] || 0) + value;
+    } else {
+      this.statusEffects[keyword] = true;
+    }
+  }
+
+  removeStatusEffect(keyword) {
+    delete this.statusEffects[keyword];
+  }
+
+  hasStatusEffect(keyword) {
+    return !!this.statusEffects[keyword];
+  }
+
+  getStatusEffect(keyword) {
+    return this.statusEffects[keyword];
+  }
+
+  decreaseStatusEffect(keyword, amount = 1) {
+    if (this.statusEffects[keyword]) {
+      if (typeof this.statusEffects[keyword] === 'number') {
+        this.statusEffects[keyword] -= amount;
+        if (this.statusEffects[keyword] <= 0) {
+          delete this.statusEffects[keyword];
+        }
+      }
+    }
   }
 
   // 기습 공격 (블럭 제거 시 적 발견)
@@ -39,7 +74,7 @@ class Enemy extends Piece {
   }
 
   // 플레이어 선공 (이미 밝혀진 적 클릭)
-  playerAttack(player, game) {
+  playerAttack(player, game, tile = null) {
     console.log(`${this.name}에게 공격!`);
 
     // 플레이어가 먼저 공격
@@ -57,7 +92,7 @@ class Enemy extends Piece {
     if (this.hp <= 0) {
       console.log(`${this.name} 처치!`);
       if (this.effect) {
-        EffectHandler.apply(this.effect, this, { player, game, event: 'on_death' });
+        EffectHandler.apply(this.effect, this, { player, game, tile, event: 'on_death' });
       }
 
       // 경험치 획득 (고정 1)
@@ -88,8 +123,8 @@ class Enemy extends Piece {
   }
 
   // 기존 interact는 playerAttack과 동일하게
-  interact(player, game) {
-    return this.playerAttack(player, game);
+  interact(player, game, tile = null) {
+    return this.playerAttack(player, game, tile);
   }
 
   getHp() {

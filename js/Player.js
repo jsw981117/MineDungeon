@@ -30,6 +30,12 @@ class Player {
     // 영구/일시 능력치 구분
     this.permanentStats = {};
     this.temporaryStats = {};
+
+    // 상태 효과 (키워드)
+    this.statusEffects = {}; // { poison: 3, burn: 2, freeze: true }
+
+    // 층 단위 임시 버프
+    this.floorBuffs = []; // [{ stat: 'attack', value: 2 }, ...]
   }
 
   takeDamage(amount) {
@@ -142,5 +148,52 @@ class Player {
 
   getExpToNext() {
     return this.expToNext;
+  }
+
+  // 상태 효과 관리
+  addStatusEffect(keyword, value = 1) {
+    if (KEYWORDS_DATA[keyword].stackable && KEYWORDS_DATA[keyword].hasValue) {
+      // 중첩 가능하고 값이 있는 경우 (독, 화상)
+      this.statusEffects[keyword] = (this.statusEffects[keyword] || 0) + value;
+    } else {
+      // 중첩 불가능한 경우 (빙결)
+      this.statusEffects[keyword] = true;
+    }
+  }
+
+  removeStatusEffect(keyword) {
+    delete this.statusEffects[keyword];
+  }
+
+  hasStatusEffect(keyword) {
+    return !!this.statusEffects[keyword];
+  }
+
+  getStatusEffect(keyword) {
+    return this.statusEffects[keyword];
+  }
+
+  decreaseStatusEffect(keyword, amount = 1) {
+    if (this.statusEffects[keyword]) {
+      if (typeof this.statusEffects[keyword] === 'number') {
+        this.statusEffects[keyword] -= amount;
+        if (this.statusEffects[keyword] <= 0) {
+          delete this.statusEffects[keyword];
+        }
+      }
+    }
+  }
+
+  // 층 단위 임시 버프
+  applyFloorBuff(stat, value) {
+    this[stat] += value;
+    this.floorBuffs.push({ stat, value });
+  }
+
+  clearFloorBuffs() {
+    this.floorBuffs.forEach(buff => {
+      this[buff.stat] -= buff.value;
+    });
+    this.floorBuffs = [];
   }
 }

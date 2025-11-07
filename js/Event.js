@@ -4,7 +4,7 @@ class Event extends Piece {
     this.choices = data.choices || [];
   }
 
-  interact(player, game) {
+  interact(player, game, tile = null) {
     // 특수 이벤트 처리
     if (this.effect === 'next_floor') {
       // 계단: 바로 층 완료 보상 표시
@@ -21,7 +21,7 @@ class Event extends Piece {
 
     // 일반 효과 적용
     if (this.effect) {
-      EffectHandler.apply(this.effect, this, { player, game, event: 'on_interact' });
+      EffectHandler.apply(this.effect, this, { player, game, tile, event: 'on_interact' });
     }
 
     // 선택지가 있으면 표시

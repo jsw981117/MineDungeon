@@ -5,13 +5,13 @@ class Item extends Piece {
     this.maxDurability = data.durability;
   }
 
-  interact(player, game) {
+  interact(player, game, tile = null) {
     // 아이템 사용
     console.log(`${this.name} 사용!`);
 
     // 효과 적용
     if (this.effect) {
-      EffectHandler.apply(this.effect, this, { player, game, event: 'on_use' });
+      EffectHandler.apply(this.effect, this, { player, game, tile, event: 'on_use' });
     }
 
     // 내구도 감소
@@ -24,9 +24,9 @@ class Item extends Piece {
     return true; // 타일에서 제거
   }
 
-  use(player, game, target = null) {
+  use(player, game, tile = null, target = null) {
     // interact()와 동일
-    return this.interact(player, game);
+    return this.interact(player, game, tile);
   }
 
   getDurability() {

@@ -90,7 +90,7 @@ class Game {
 
       // 적이면 플레이어 선공
       if (piece.type === 'enemy') {
-        shouldRemove = piece.playerAttack(this.player, this);
+        shouldRemove = piece.playerAttack(this.player, this, tile);
 
         // 레벨업 체크
         if (this.player.exp >= this.player.expToNext) {
@@ -101,7 +101,7 @@ class Game {
         }
       } else {
         // 아이템/이벤트는 일반 상호작용
-        shouldRemove = piece.interact(this.player, this);
+        shouldRemove = piece.interact(this.player, this, tile);
       }
 
       if (shouldRemove) {
