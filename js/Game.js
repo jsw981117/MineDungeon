@@ -312,14 +312,14 @@ class Game {
   showLevelUpReward() {
     // 능력치 증가 선택지 생성 (3개 무작위)
     const statOptions = [
-      { stat: 'hp', text: 'HP +5', value: 5 },
-      { stat: 'mp', text: 'MP +5', value: 5 },
-      { stat: 'attack', text: '공격력 +1', value: 1 },
-      { stat: 'magic', text: '마법력 +1', value: 1 },
-      { stat: 'defense', text: '방어력 +1', value: 1 },
-      { stat: 'critRate', text: '치명타율 +3%', value: 3 },
-      { stat: 'critDamage', text: '치명타 피해 +10%', value: 10 },
-      { stat: 'evasion', text: '회피율 +3%', value: 3 }
+      { stat: 'hp', text: 'HP +20', value: 20 },
+      { stat: 'mp', text: 'MP +10', value: 10 },
+      { stat: 'attack', text: '공격력 +3', value: 3 },
+      { stat: 'magic', text: '마법력 +3', value: 3 },
+      { stat: 'defense', text: '방어력 +2', value: 2 },
+      { stat: 'critRate', text: '치명타율 +5%', value: 5 },
+      { stat: 'critDamage', text: '치명타 피해 +15%', value: 15 },
+      { stat: 'evasion', text: '회피율 +5%', value: 5 }
     ];
 
     // 무작위로 3개 선택

@@ -32,8 +32,8 @@ class Floor {
     for (const enemy of enemiesToPlace) {
       if (tileIndex >= totalTiles) break;
 
-      // HP 스케일링 (baseHp + (level-1) * 2)
-      enemy.maxHp = enemy.baseHp + (this.level - 1) * 2;
+      // HP 스케일링 (baseHp + (level-1) * 5)
+      enemy.maxHp = enemy.baseHp + (this.level - 1) * 5;
       enemy.hp = enemy.maxHp;
 
       // 적 인스턴스 직접 사용 (덱에서 제거하지 않음)

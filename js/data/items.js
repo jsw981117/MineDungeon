@@ -6,7 +6,7 @@ const ITEMS_DATA = [
     type: 'item',
     durability: 3,
     effect: 'attack_buff_2',
-    description: '이번 층에서 공격력 +2'
+    description: '이번 층에서 공격력 +5'
   },
 
   // 공격 아이템 (타겟팅)
@@ -72,7 +72,7 @@ const ITEMS_DATA = [
     type: 'item',
     durability: 3,
     effect: 'heal_5',
-    description: 'HP 5 회복'
+    description: 'HP 25 회복'
   },
 
   {
@@ -81,7 +81,7 @@ const ITEMS_DATA = [
     type: 'item',
     durability: 3,
     effect: 'mana_restore_5',
-    description: 'MP 5 회복'
+    description: 'MP 15 회복'
   },
 
   {

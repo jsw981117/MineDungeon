@@ -1,17 +1,17 @@
 class Player {
   constructor() {
     // 기본 능력치
-    this.hp = 20;
-    this.maxHp = 20;
-    this.mp = 10;
-    this.maxMp = 10;
+    this.hp = 100;
+    this.maxHp = 100;
+    this.mp = 50;
+    this.maxMp = 50;
 
     // 공격 능력치
-    this.attack = 2;
-    this.magic = 0;
+    this.attack = 10;
+    this.magic = 5;
 
     // 방어 능력치
-    this.defense = 0;
+    this.defense = 5;
 
     // 전투 능력치
     this.critRate = 5;        // 치명타 확률 (%)

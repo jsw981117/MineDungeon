@@ -40,11 +40,11 @@ class EffectHandler {
         break;
 
       case 'heal_5':
-        if (player) player.heal(5);
+        if (player) player.heal(25);
         break;
 
       case 'mana_restore_5':
-        if (player) player.restoreMp(5);
+        if (player) player.restoreMp(15);
         break;
 
       // 아이템 효과 - 버프
@@ -54,8 +54,8 @@ class EffectHandler {
 
       case 'attack_buff_2':
         if (player) {
-          player.applyFloorBuff('attack', 2);
-          console.log('이번 층에서 공격력 +2!');
+          player.applyFloorBuff('attack', 5);
+          console.log('이번 층에서 공격력 +5!');
         }
         break;
 
