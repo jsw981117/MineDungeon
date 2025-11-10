@@ -295,6 +295,16 @@ body.landscape #gameContainer {
   color: #ccc;
 }
 
+.tooltip-description {
+  font-size: calc(min(1.8vh, 14px) * var(--text-scale));
+  margin-top: min(1vh, 8px);
+  padding: min(1vh, 8px);
+  background-color: rgba(255, 255, 255, 0.05);
+  border-radius: min(0.5vh, 4px);
+  color: #aaf;
+  line-height: 1.4;
+}
+
 .tooltip-effect {
   font-size: calc(min(1.8vh, 14px) * var(--text-scale));
   margin-top: min(1vh, 8px);

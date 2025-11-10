@@ -333,12 +333,14 @@ function showPieceTooltip(event, type, index) {
     `;
     if (piece.critRate > 0) tooltipHTML += `<div class="tooltip-stat">치명타율: ${piece.critRate}%</div>`;
     if (piece.evasion > 0) tooltipHTML += `<div class="tooltip-stat">회피율: ${piece.evasion}%</div>`;
+    if (piece.description) tooltipHTML += `<div class="tooltip-description">${piece.description}</div>`;
     if (piece.effect) tooltipHTML += `<div class="tooltip-effect">효과: ${piece.effect}</div>`;
   } else if (type === 'item') {
     tooltipHTML += `
       <div class="tooltip-stat">내구도: ${piece.durability}</div>
-      <div class="tooltip-effect">효과: ${piece.effect}</div>
     `;
+    if (piece.description) tooltipHTML += `<div class="tooltip-description">${piece.description}</div>`;
+    if (piece.effect) tooltipHTML += `<div class="tooltip-effect">효과: ${piece.effect}</div>`;
   }
 
   tooltip.innerHTML = tooltipHTML;
