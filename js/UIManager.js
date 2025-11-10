@@ -22,7 +22,10 @@ class UIManager {
 
     this.canvas.width = boardSize;
     this.canvas.height = boardSize;
-    this.tileSize = boardSize / 8;
+
+    // 보드 크기에 따라 동적으로 타일 크기 계산
+    const gridSize = this.game.board ? this.game.board.width : 8;
+    this.tileSize = boardSize / gridSize;
   }
 
   setupEvents() {

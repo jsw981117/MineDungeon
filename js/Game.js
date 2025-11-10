@@ -1,7 +1,7 @@
 class Game {
   constructor() {
     this.player = new Player();
-    this.board = new Board(8, 8);
+    this.board = new Board(6, 6); // 초기 6x6
     this.deck = new Deck();
     this.currentFloor = 1;
     this.uiManager = null;
@@ -16,20 +16,40 @@ class Game {
   }
 
   initDeck() {
-    // 첫 시작: 아이템만 추가 (적은 매 층마다 추가)
-    if (typeof ITEMS_DATA !== 'undefined') {
-      ITEMS_DATA.forEach(data => {
-        this.deck.addPiece(new Item(data));
+    // 첫 시작: 몬스터 3마리, 아이템 3개 랜덤 선택
+
+    // 몬스터 3마리 랜덤 선택
+    if (typeof ENEMIES_DATA !== 'undefined' && ENEMIES_DATA.length > 0) {
+      const shuffledEnemies = [...ENEMIES_DATA].sort(() => Math.random() - 0.5);
+      const selectedEnemies = shuffledEnemies.slice(0, 3);
+      selectedEnemies.forEach(data => {
+        this.deck.addEnemy(new Enemy(data));
+      });
+    }
+
+    // 아이템 3개 랜덤 선택
+    if (typeof ITEMS_DATA !== 'undefined' && ITEMS_DATA.length > 0) {
+      const shuffledItems = [...ITEMS_DATA].sort(() => Math.random() - 0.5);
+      const selectedItems = shuffledItems.slice(0, 3);
+      selectedItems.forEach(data => {
+        this.deck.addItem(new Item(data));
       });
     }
   }
 
   startFloor() {
-    // 매 층마다 적을 새로 추가 (이전 층의 적은 모두 배치되었으므로)
-    if (typeof ENEMIES_DATA !== 'undefined') {
-      ENEMIES_DATA.forEach(data => {
-        this.deck.addEnemy(new Enemy(data));
-      });
+    // 보드 크기 조정 (5층부터 7x7, 10층부터 8x8)
+    let boardSize = 6;
+    if (this.currentFloor >= 10) {
+      boardSize = 8;
+    } else if (this.currentFloor >= 5) {
+      boardSize = 7;
+    }
+
+    // 보드 크기가 변경되면 보드 재생성
+    if (this.board.width !== boardSize || this.board.height !== boardSize) {
+      this.board = new Board(boardSize, boardSize);
+      this.uiManager.setupCanvas(); // 캔버스 크기도 재조정
     }
 
     // 덱을 직접 사용 (복사하지 않음 - 아이템 이월을 위해)
@@ -181,7 +201,7 @@ class Game {
             tile.removePiece();
 
             // 주변 타일 숫자 업데이트
-            this.board.updateAdjacentNumbers(tile.col, tile.row);
+            this.board.updateAdjacentNumbers(tile.x, tile.y);
           }
         }
       });

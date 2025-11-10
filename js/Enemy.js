@@ -107,7 +107,7 @@ class Enemy extends Piece {
 
       // 주변 타일 숫자 업데이트
       if (tile && game.board) {
-        game.board.updateAdjacentNumbers(tile.col, tile.row);
+        game.board.updateAdjacentNumbers(tile.x, tile.y);
       }
 
       return true; // 타일에서 제거
