@@ -105,6 +105,11 @@ class Enemy extends Piece {
         console.log(`${this.name}이(가) 덱에서 제거되었습니다!`);
       }
 
+      // 주변 타일 숫자 업데이트
+      if (tile && game.board) {
+        game.board.updateAdjacentNumbers(tile.col, tile.row);
+      }
+
       return true; // 타일에서 제거
     }
 

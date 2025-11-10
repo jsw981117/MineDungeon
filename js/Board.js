@@ -66,4 +66,27 @@ class Board {
       }
     }
   }
+
+  // 특정 타일 주변 8칸의 adjacentEnemies 숫자를 업데이트
+  updateAdjacentNumbers(x, y) {
+    const directions = [
+      [-1, -1], [0, -1], [1, -1],
+      [-1, 0],           [1, 0],
+      [-1, 1],  [0, 1],  [1, 1]
+    ];
+
+    // 주변 8칸의 숫자 재계산
+    for (const [dx, dy] of directions) {
+      const adjacentTile = this.getTile(x + dx, y + dy);
+      if (adjacentTile) {
+        adjacentTile.adjacentEnemies = this.countAdjacentEnemies(x + dx, y + dy);
+      }
+    }
+
+    // 해당 타일 자체도 업데이트
+    const tile = this.getTile(x, y);
+    if (tile) {
+      tile.adjacentEnemies = this.countAdjacentEnemies(x, y);
+    }
+  }
 }

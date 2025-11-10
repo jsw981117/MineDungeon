@@ -68,8 +68,12 @@ class Game {
             return;
           }
           // 기습 후에는 적이 남아있음 (플레이어가 다시 클릭해야 공격)
+          // 적 블록 클릭 시에는 자동 탐색 체크 안 함
+        } else {
+          // 아이템/이벤트 블록 제거 (공개만 됨)
+          // 비-적 블록 탐색 시 자동 탐색 체크
+          this.checkEnemyWipeout();
         }
-        // 아이템/이벤트는 블록 제거 시 효과 발동하지 않음 (공개만 됨)
 
         this.uiManager.updateStats();
         this.uiManager.render();
@@ -78,6 +82,8 @@ class Game {
         if (tile.adjacentEnemies === 0) {
           this.floodFill(x, y);
         }
+        // 빈 블록 탐색 시 자동 탐색 체크
+        this.checkEnemyWipeout();
         this.uiManager.render();
       }
       return;
@@ -116,9 +122,6 @@ class Game {
         this.gameOver();
       }
     }
-
-    // 모든 적 발견 메커닉 체크
-    this.checkEnemyWipeout();
   }
 
   checkEnemyWipeout() {
@@ -140,19 +143,61 @@ class Game {
         tile.explored = true;
       });
 
-      // 플레이어가 공격력만큼 피해
-      this.player.takeDamage(this.player.attack);
-      console.log(`모든 적 발견! 플레이어가 ${this.player.attack} 피해를 입었습니다.`);
+      console.log(`모든 적 발견! 적들이 ${this.player.attack} 피해를 입습니다.`);
+
+      // 각 적에게 플레이어 공격력만큼 피해 적용
+      let totalKills = 0;
+      blockedTiles.forEach(tile => {
+        if (tile.hasPiece() && tile.piece.type === 'enemy') {
+          const enemy = tile.piece;
+          enemy.hp -= this.player.attack;
+
+          // 적 사망 처리
+          if (enemy.hp <= 0) {
+            console.log(`${enemy.name} 처치!`);
+
+            // 사망 효과 발동
+            if (enemy.effect) {
+              EffectHandler.apply(enemy.effect, enemy, {
+                player: this.player,
+                game: this,
+                tile: tile,
+                event: 'on_death'
+              });
+            }
+
+            // 경험치 획득 (고정 1)
+            this.player.gainExp(1);
+            totalKills++;
+
+            // 내구도 감소
+            enemy.durability--;
+            if (enemy.durability <= 0) {
+              this.deck.removeEnemy(enemy);
+              console.log(`${enemy.name}이(가) 덱에서 제거되었습니다!`);
+            }
+
+            // 타일에서 제거
+            tile.removePiece();
+
+            // 주변 타일 숫자 업데이트
+            this.board.updateAdjacentNumbers(tile.col, tile.row);
+          }
+        }
+      });
+
+      // 레벨업 체크
+      if (this.player.exp >= this.player.expToNext) {
+        const leveledUp = this.player.levelUp();
+        if (leveledUp) {
+          this.showLevelUpReward();
+        }
+      }
 
       this.uiManager.updateStats();
       this.uiManager.render();
 
-      this.showMessage(`모든 적이 발견되었습니다! ${this.player.attack} 피해!`);
-
-      // 플레이어 사망 체크
-      if (this.player.isDead()) {
-        this.gameOver();
-      }
+      this.showMessage(`모든 적 발견! ${totalKills}마리 처치!`);
     }
   }
 

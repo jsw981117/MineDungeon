@@ -223,9 +223,9 @@ body.landscape #gameContainer {
 }
 
 .deck-list {
-  display: flex;
-  flex-direction: column;
-  gap: min(1vh, 8px);
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: min(1.5vh, 12px);
 }
 
 .deck-empty {
