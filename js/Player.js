@@ -23,6 +23,9 @@ class Player {
     this.exp = 0;
     this.expToNext = 3;
 
+    // 골드
+    this.gold = 50;
+
     // 인벤토리
     this.inventory = [];
     this.artifacts = [];

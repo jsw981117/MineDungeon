@@ -283,6 +283,65 @@ body.landscape #gameContainer {
   background-color: var(--color-button-hover);
 }
 
+/* 상점 */
+.shop-items {
+  display: flex;
+  flex-direction: column;
+  gap: min(2vh, 16px);
+  margin-bottom: min(2vh, 16px);
+}
+
+.shop-item {
+  background-color: var(--bg-block);
+  padding: min(2vh, 16px);
+  border-radius: min(0.5vh, 4px);
+  border: 2px solid var(--color-button);
+}
+
+.shop-item-disabled {
+  opacity: 0.5;
+  border-color: #555;
+}
+
+.shop-item-name {
+  font-size: calc(min(2.5vh, 20px) * var(--text-scale));
+  font-weight: bold;
+  margin-bottom: min(1vh, 8px);
+  color: var(--color-text);
+}
+
+.shop-item-description {
+  font-size: calc(min(1.8vh, 14px) * var(--text-scale));
+  color: #aaf;
+  margin-bottom: min(1vh, 8px);
+}
+
+.shop-item-durability {
+  font-size: calc(min(1.8vh, 14px) * var(--text-scale));
+  color: #aaa;
+  margin-bottom: min(1vh, 8px);
+}
+
+.shop-buy-btn {
+  padding: calc(min(1vh, 8px) * var(--button-scale)) calc(min(2vw, 16px) * var(--button-scale));
+  background-color: var(--color-button);
+  color: var(--color-text);
+  border: none;
+  cursor: pointer;
+  font-size: calc(min(2vh, 16px) * var(--text-scale));
+  border-radius: min(0.5vh, 4px);
+  width: 100%;
+}
+
+.shop-buy-btn:hover:not(:disabled) {
+  background-color: var(--color-button-hover);
+}
+
+.shop-buy-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
 /* 피스 툴팁 */
 .piece-tooltip {
   position: fixed;

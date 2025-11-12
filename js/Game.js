@@ -209,8 +209,9 @@ class Game {
               });
             }
 
-            // 경험치 획득 (고정 1)
+            // 경험치 및 골드 획득
             this.player.gainExp(1);
+            this.player.gold += 5; // 고정 5골드
             totalKills++;
 
             // 내구도 감소
@@ -327,8 +328,7 @@ class Game {
   }
 
   showShop() {
-    // 추후 구현
-    console.log('Shop opened');
+    showShopPopup();
   }
 
   showLevelUpReward() {
@@ -468,8 +468,9 @@ class Game {
           });
         }
 
-        // 경험치 획득
+        // 경험치 및 골드 획득
         this.player.gainExp(1);
+        this.player.gold += 5; // 고정 5골드
 
         // 내구도 감소
         enemy.durability--;

@@ -96,8 +96,9 @@ class Enemy extends Piece {
         EffectHandler.apply(this.effect, this, { player, game, tile, event: 'on_death' });
       }
 
-      // 경험치 획득 (고정 1)
+      // 경험치 및 골드 획득
       player.gainExp(1);
+      player.gold += 5; // 고정 5골드
 
       // 내구도 감소
       this.durability--;

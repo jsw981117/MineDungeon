@@ -461,3 +461,66 @@ function selectEventChoice(eventId, choiceIndex) {
 
   closePopup();
 }
+
+// 상점 팝업
+function showShopPopup() {
+  const popup = document.getElementById('popup');
+  const content = document.querySelector('.popup-content');
+
+  if (!popup || !content) return;
+
+  // 랜덤 아이템 3개 선택
+  const shopItems = [];
+  if (typeof ITEMS_DATA !== 'undefined') {
+    const shuffled = [...ITEMS_DATA].sort(() => Math.random() - 0.5);
+    shuffled.slice(0, 3).forEach(itemData => {
+      const price = 20 + Math.floor(Math.random() * 30); // 20~50 골드
+      shopItems.push({ ...itemData, price });
+    });
+  }
+
+  let itemsHTML = '<div class="shop-items">';
+  shopItems.forEach((item, index) => {
+    const canAfford = game.player.gold >= item.price;
+    itemsHTML += `
+      <div class="shop-item ${!canAfford ? 'shop-item-disabled' : ''}">
+        <div class="shop-item-name">${item.name}</div>
+        <div class="shop-item-description">${item.description || ''}</div>
+        <div class="shop-item-durability">내구도: ${item.durability}</div>
+        <button class="shop-buy-btn" onclick="buyShopItem(${index})" ${!canAfford ? 'disabled' : ''}>
+          💰 ${item.price}
+        </button>
+      </div>
+    `;
+  });
+  itemsHTML += '</div>';
+
+  content.innerHTML = `
+    <div class="popup-title">상점</div>
+    <div class="popup-text">소지금: 💰 ${game.player.gold}</div>
+    ${itemsHTML}
+    <div class="popup-buttons">
+      <button class="popup-button" onclick="closePopup()">나가기</button>
+    </div>
+  `;
+
+  popup.classList.add('active');
+
+  // 상점 아이템 저장
+  popup.dataset.shopItems = JSON.stringify(shopItems);
+}
+
+// 상점 아이템 구매
+function buyShopItem(index) {
+  const popup = document.getElementById('popup');
+  const shopItems = JSON.parse(popup.dataset.shopItems);
+  const item = shopItems[index];
+
+  if (game.player.gold >= item.price) {
+    game.player.gold -= item.price;
+    game.deck.addItem(new Item(item));
+    game.uiManager.updateStats();
+    game.showMessage(`${item.name} 구매!`);
+    closePopup();
+  }
+}

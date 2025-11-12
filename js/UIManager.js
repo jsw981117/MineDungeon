@@ -331,6 +331,7 @@ class UIManager {
     const hpEl = document.getElementById('hpText');
     const mpEl = document.getElementById('mpText');
     const expEl = document.getElementById('expText');
+    const goldEl = document.getElementById('goldText');
 
     if (floorEl) floorEl.textContent = `Floor ${floor}`;
     if (hpEl) hpEl.textContent = `HP: ${player.getHp()}/${player.getMaxHp()}`;
@@ -339,6 +340,7 @@ class UIManager {
       const expPercent = Math.floor((player.exp / player.expToNext) * 100);
       expEl.textContent = `LV${player.level} [${expPercent}%]`;
     }
+    if (goldEl) goldEl.textContent = `💰 ${player.gold}`;
   }
 
   handleHover(clientX, clientY) {
