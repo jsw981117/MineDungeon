@@ -241,9 +241,10 @@ class UIManager {
         const maxWidth = this.tileSize * 0.6;
         this.wrapText(name, px + this.tileSize / 2, py + this.tileSize / 2, maxWidth, this.tileSize * 0.15);
 
-        // 적이면 체력바 표시
+        // 적이면 체력바 및 상태 효과 표시
         if (piece.type === 'enemy') {
           this.renderHealthBar(piece, px, py);
+          this.renderStatusEffects(piece, px, py);
         }
       } else {
         // 빈칸 - 숫자 표시
@@ -341,6 +342,16 @@ class UIManager {
       expEl.textContent = `LV${player.level} [${expPercent}%]`;
     }
     if (goldEl) goldEl.textContent = `💰 ${player.gold}`;
+
+    // 플레이어 상태 효과 표시
+    const statusEl = document.getElementById('statusText');
+    if (statusEl) {
+      let statusText = '';
+      if (player.statusEffects.poison) statusText += `🧪${player.statusEffects.poison} `;
+      if (player.statusEffects.burn) statusText += `🔥${player.statusEffects.burn} `;
+      if (player.statusEffects.freeze) statusText += '❄️ ';
+      statusEl.textContent = statusText.trim();
+    }
   }
 
   handleHover(clientX, clientY) {
@@ -453,5 +464,40 @@ class UIManager {
     }
 
     return false;
+  }
+
+  // 상태 효과 아이콘 표시
+  renderStatusEffects(piece, px, py) {
+    if (!piece.statusEffects) return;
+
+    const iconSize = this.tileSize * 0.15;
+    let iconX = px + this.tileSize - iconSize - 2;
+    const iconY = py + 2;
+
+    // 독
+    if (piece.statusEffects.poison) {
+      this.ctx.font = `${iconSize}px Arial`;
+      this.ctx.textAlign = 'right';
+      this.ctx.textBaseline = 'top';
+      this.ctx.fillText(`🧪${piece.statusEffects.poison}`, iconX, iconY);
+      iconX -= iconSize * 2;
+    }
+
+    // 화상
+    if (piece.statusEffects.burn) {
+      this.ctx.font = `${iconSize}px Arial`;
+      this.ctx.textAlign = 'right';
+      this.ctx.textBaseline = 'top';
+      this.ctx.fillText(`🔥${piece.statusEffects.burn}`, iconX, iconY);
+      iconX -= iconSize * 2;
+    }
+
+    // 빙결
+    if (piece.statusEffects.freeze) {
+      this.ctx.font = `${iconSize}px Arial`;
+      this.ctx.textAlign = 'right';
+      this.ctx.textBaseline = 'top';
+      this.ctx.fillText('❄️', iconX, iconY);
+    }
   }
 }
