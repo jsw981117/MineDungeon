@@ -36,6 +36,18 @@ const ENEMIES_DATA = [
     description: '사망 시 분열하는 젤리 몬스터. 가장 높은 내구도를 가진다.'
   },
   {
+    id: 'small_slime',
+    name: '작은 슬라임',
+    type: 'enemy',
+    hp: 8,
+    attack: 2,
+    defense: 0,
+    durability: 2,
+    expReward: 10,
+    effect: null,
+    description: '분열된 슬라임. 약하지만 여전히 성가시다.'
+  },
+  {
     id: 'vampire',
     name: '뱀파이어',
     type: 'enemy',

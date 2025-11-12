@@ -138,9 +138,46 @@ class EffectHandler {
 
       // 적 사망 효과
       case 'split_on_death':
-        if (event === 'on_death' && game) {
-          // 분열 로직 (간단히 구현)
-          console.log('Enemy splits!');
+        if (event === 'on_death' && game && context.tile) {
+          // 작은 슬라임 데이터 찾기
+          const smallSlimeData = ENEMIES_DATA.find(e => e.id === 'small_slime');
+          if (!smallSlimeData) break;
+
+          // 주변 빈 타일 찾기 (최대 2개)
+          const centerX = context.tile.x;
+          const centerY = context.tile.y;
+          const board = game.board;
+          const emptyTiles = [];
+
+          const directions = [
+            [-1, -1], [0, -1], [1, -1],
+            [-1, 0],           [1, 0],
+            [-1, 1],  [0, 1],  [1, 1]
+          ];
+
+          for (const [dx, dy] of directions) {
+            const tile = board.getTile(centerX + dx, centerY + dy);
+            if (tile && tile.explored && !tile.hasPiece() && !tile.hasBlock()) {
+              emptyTiles.push(tile);
+            }
+          }
+
+          // 최대 2마리 생성
+          const spawnCount = Math.min(2, emptyTiles.length);
+          for (let i = 0; i < spawnCount; i++) {
+            const tile = emptyTiles[i];
+            const smallSlime = new Enemy(smallSlimeData);
+            tile.setPiece(smallSlime);
+            game.deck.addEnemy(smallSlime);
+          }
+
+          if (spawnCount > 0) {
+            console.log(`슬라임이 ${spawnCount}마리로 분열했습니다!`);
+            // 주변 숫자 업데이트
+            for (let i = 0; i < spawnCount; i++) {
+              board.updateAdjacentNumbers(emptyTiles[i].x, emptyTiles[i].y);
+            }
+          }
         }
         break;
 
