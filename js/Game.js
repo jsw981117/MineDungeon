@@ -73,6 +73,9 @@ class Game {
       // 깃발이 표시된 블록은 클릭 무시
       if (tile.block.isFlagged()) return;
 
+      // 플레이어 행동: 블록 열기 (독 효과 발동)
+      this.player.onPlayerAction();
+
       tile.removeBlock();
       tile.explored = true;
 
@@ -97,6 +100,12 @@ class Game {
 
         this.uiManager.updateStats();
         this.uiManager.render();
+
+        // 독으로 사망 체크
+        if (this.player.isDead()) {
+          this.gameOver();
+          return;
+        }
       } else {
         // 빈칸 - 연쇄 탐색
         if (tile.adjacentEnemies === 0) {
@@ -105,6 +114,12 @@ class Game {
         // 빈 블록 탐색 시 자동 탐색 체크
         this.checkEnemyWipeout();
         this.uiManager.render();
+
+        // 독으로 사망 체크
+        if (this.player.isDead()) {
+          this.gameOver();
+          return;
+        }
       }
       return;
     }
@@ -113,6 +128,9 @@ class Game {
     if (tile.explored && tile.hasPiece()) {
       const piece = tile.piece;
       let shouldRemove = false;
+
+      // 플레이어 행동: 공격 또는 아이템 사용 (독 효과 발동)
+      this.player.onPlayerAction();
 
       // 적이면 플레이어 선공
       if (piece.type === 'enemy') {

@@ -196,4 +196,45 @@ class Player {
     });
     this.floorBuffs = [];
   }
+
+  // 플레이어 행동 시 호출 (독 효과 처리)
+  onPlayerAction() {
+    if (this.hasStatusEffect('poison')) {
+      const poisonDamage = this.getStatusEffect('poison');
+      this.hp = Math.max(0, this.hp - poisonDamage);
+      console.log(`독 피해! ${poisonDamage} 피해를 입었습니다.`);
+      this.decreaseStatusEffect('poison', 1);
+
+      if (this.hasStatusEffect('poison')) {
+        console.log(`독 ${this.getStatusEffect('poison')} 남음`);
+      } else {
+        console.log('독이 사라졌습니다.');
+      }
+    }
+  }
+
+  // 피해를 받을 때 호출 (화상 효과 처리)
+  takeDamageWithEffects(amount) {
+    let totalDamage = amount;
+
+    // 화상 효과: 피해 받을 때 추가 피해
+    if (this.hasStatusEffect('burn')) {
+      const burnDamage = this.getStatusEffect('burn');
+      totalDamage += burnDamage;
+      console.log(`화상 피해! ${burnDamage} 추가 피해!`);
+
+      // 화상 수치 절반으로 감소 (반내림)
+      const newBurnValue = Math.floor(burnDamage / 2);
+      if (newBurnValue > 0) {
+        this.statusEffects['burn'] = newBurnValue;
+        console.log(`화상 ${newBurnValue} 남음`);
+      } else {
+        this.removeStatusEffect('burn');
+        console.log('화상이 사라졌습니다.');
+      }
+    }
+
+    // 실제 피해 적용
+    this.takeDamage(totalDamage);
+  }
 }

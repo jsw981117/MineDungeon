@@ -60,7 +60,8 @@ class Enemy extends Piece {
     if (result.isEvaded) {
       console.log('회피!');
     } else {
-      player.hp = Math.max(0, player.hp - result.damage);
+      // 화상 효과를 포함한 피해 처리
+      player.takeDamageWithEffects(result.damage);
       if (result.isCrit) console.log(`치명타! ${result.damage} 피해!`);
       else console.log(`${result.damage} 피해!`);
     }
@@ -113,15 +114,22 @@ class Enemy extends Piece {
       return true; // 타일에서 제거
     }
 
-    // 적이 반격
-    const enemyResult = CombatCalculator.enemyAttackPlayer(this, player, false);
+    // 적이 반격 (빙결 체크)
+    if (!this.hasStatusEffect('freeze')) {
+      const enemyResult = CombatCalculator.enemyAttackPlayer(this, player, false);
 
-    if (enemyResult.isEvaded) {
-      console.log('회피!');
+      if (enemyResult.isEvaded) {
+        console.log('회피!');
+      } else {
+        // 화상 효과를 포함한 피해 처리
+        player.takeDamageWithEffects(enemyResult.damage);
+        if (enemyResult.isCrit) console.log(`${this.name}의 치명타! ${enemyResult.damage} 피해!`);
+        else console.log(`${this.name}의 반격! ${enemyResult.damage} 피해!`);
+      }
     } else {
-      player.hp = Math.max(0, player.hp - enemyResult.damage);
-      if (enemyResult.isCrit) console.log(`${this.name}의 치명타! ${enemyResult.damage} 피해!`);
-      else console.log(`${this.name}의 반격! ${enemyResult.damage} 피해!`);
+      // 빙결 상태: 반격 불가
+      console.log(`${this.name}은(는) 빙결 상태라 반격하지 못했습니다!`);
+      this.removeStatusEffect('freeze');
     }
 
     return false; // 적 생존
