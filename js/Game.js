@@ -12,6 +12,7 @@ class Game {
     this.targetingMode = false;
     this.targetingItem = null;
     this.targetingType = null; // 'single', 'row', 'col', 'area'
+    this.targetingItemTile = null; // 아이템이 있던 타일
   }
 
   init(canvas) {
@@ -150,8 +151,27 @@ class Game {
             this.showLevelUpReward();
           }
         }
+      } else if (piece.type === 'item') {
+        // 아이템: 타겟팅이 필요한지 확인
+        const targetingEffects = {
+          'bow_attack': 'single',
+          'staff_attack': 'row',
+          'bomb_attack': 'area',
+          'poison_apply_3': 'single',
+          'burn_apply_4': 'single',
+          'freeze_apply': 'single'
+        };
+
+        if (targetingEffects[piece.effect]) {
+          // 타겟팅 모드 시작
+          this.startTargeting(piece, targetingEffects[piece.effect], tile);
+          shouldRemove = false; // 아직 제거하지 않음
+        } else {
+          // 즉시 사용 아이템
+          shouldRemove = piece.interact(this.player, this, tile);
+        }
       } else {
-        // 아이템/이벤트는 일반 상호작용
+        // 이벤트는 일반 상호작용
         shouldRemove = piece.interact(this.player, this, tile);
       }
 
@@ -393,10 +413,11 @@ class Game {
   }
 
   // 타겟팅 모드 시작
-  startTargeting(item, targetingType) {
+  startTargeting(item, targetingType, itemTile = null) {
     this.targetingMode = true;
     this.targetingItem = item;
     this.targetingType = targetingType;
+    this.targetingItemTile = itemTile;
     this.showMessage(`${item.name} 사용 - 타겟을 선택하세요`, 5000);
     this.uiManager.render();
   }
@@ -406,12 +427,16 @@ class Game {
     this.targetingMode = false;
     this.targetingItem = null;
     this.targetingType = null;
+    this.targetingItemTile = null;
     this.uiManager.render();
   }
 
   // 타겟팅 완료 (타일 선택됨)
   useItemOnTarget(tileX, tileY) {
     if (!this.targetingMode || !this.targetingItem) return;
+
+    // 플레이어 행동: 아이템 사용 (독 효과 발동)
+    this.player.onPlayerAction();
 
     const item = this.targetingItem;
     const tile = this.board.getTile(tileX, tileY);
@@ -462,6 +487,11 @@ class Game {
       this.showMessage(`${item.name}이(가) 파괴되었습니다!`);
     }
 
+    // 아이템이 있던 타일에서 제거
+    if (this.targetingItemTile && this.targetingItemTile.hasPiece() && this.targetingItemTile.piece === item) {
+      this.targetingItemTile.removePiece();
+    }
+
     // 적 사망 처리
     const allTiles = this.board.getTiles();
     allTiles.forEach(t => {
@@ -510,5 +540,11 @@ class Game {
     this.cancelTargeting();
     this.uiManager.updateStats();
     this.uiManager.render();
+
+    // 플레이어 사망 체크 (독 피해 등)
+    if (this.player.isDead()) {
+      this.gameOver();
+      return;
+    }
   }
 }
