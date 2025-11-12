@@ -157,6 +157,11 @@ class Game {
 
       if (shouldRemove) {
         tile.removePiece();
+
+        // 적 제거 시 주변 숫자 업데이트
+        if (piece.type === 'enemy') {
+          this.board.updateAdjacentNumbers(tile.x, tile.y);
+        }
       }
 
       this.uiManager.updateStats();
@@ -243,7 +248,7 @@ class Game {
       this.uiManager.updateStats();
       this.uiManager.render();
 
-      this.showMessage(`모든 적 발견! ${totalKills}마리 처치!`);
+      this.showMessage('필살기 발동!');
     }
   }
 
