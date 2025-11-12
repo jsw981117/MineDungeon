@@ -7,6 +7,11 @@ class Game {
     this.uiManager = null;
     this.settings = new Settings();
     this.isFloorClear = false; // 층 완료 플래그
+
+    // 타겟팅 모드
+    this.targetingMode = false;
+    this.targetingItem = null;
+    this.targetingType = null; // 'single', 'row', 'col', 'area'
   }
 
   init(canvas) {
@@ -375,5 +380,124 @@ class Game {
     const choices = shuffled.slice(0, Math.min(3, ENEMIES_DATA.length));
 
     showEnemyRewardPopup(choices);
+  }
+
+  // 타겟팅 모드 시작
+  startTargeting(item, targetingType) {
+    this.targetingMode = true;
+    this.targetingItem = item;
+    this.targetingType = targetingType;
+    this.showMessage(`${item.name} 사용 - 타겟을 선택하세요`, 5000);
+    this.uiManager.render();
+  }
+
+  // 타겟팅 모드 종료
+  cancelTargeting() {
+    this.targetingMode = false;
+    this.targetingItem = null;
+    this.targetingType = null;
+    this.uiManager.render();
+  }
+
+  // 타겟팅 완료 (타일 선택됨)
+  useItemOnTarget(tileX, tileY) {
+    if (!this.targetingMode || !this.targetingItem) return;
+
+    const item = this.targetingItem;
+    const tile = this.board.getTile(tileX, tileY);
+
+    // 타겟팅 타입에 따라 처리
+    let targets = [];
+    if (this.targetingType === 'single') {
+      if (tile && tile.hasPiece()) {
+        targets = [tile.piece];
+      }
+    } else if (this.targetingType === 'row') {
+      // 해당 행의 모든 적
+      for (let x = 0; x < this.board.width; x++) {
+        const t = this.board.getTile(x, tileY);
+        if (t && t.explored && t.hasPiece() && t.piece.type === 'enemy') {
+          targets.push(t.piece);
+        }
+      }
+    } else if (this.targetingType === 'col') {
+      // 해당 열의 모든 적
+      for (let y = 0; y < this.board.height; y++) {
+        const t = this.board.getTile(tileX, y);
+        if (t && t.explored && t.hasPiece() && t.piece.type === 'enemy') {
+          targets.push(t.piece);
+        }
+      }
+    } else if (this.targetingType === 'area') {
+      // 3x3 영역
+      targets = { tile, area: '3x3' };
+    }
+
+    // 아이템 사용
+    if (item.effect) {
+      EffectHandler.apply(item.effect, item, {
+        player: this.player,
+        game: this,
+        tile,
+        target: targets.length === 1 ? targets[0] : null,
+        targets: Array.isArray(targets) ? targets : null,
+        event: 'on_use'
+      });
+    }
+
+    // 내구도 감소
+    item.durability--;
+    if (item.durability <= 0) {
+      this.deck.removeItem(item);
+      this.showMessage(`${item.name}이(가) 파괴되었습니다!`);
+    }
+
+    // 적 사망 처리
+    const allTiles = this.board.getTiles();
+    allTiles.forEach(t => {
+      if (t.hasPiece() && t.piece.type === 'enemy' && t.piece.hp <= 0) {
+        const enemy = t.piece;
+        console.log(`${enemy.name} 처치!`);
+
+        // 사망 효과 발동
+        if (enemy.effect) {
+          EffectHandler.apply(enemy.effect, enemy, {
+            player: this.player,
+            game: this,
+            tile: t,
+            event: 'on_death'
+          });
+        }
+
+        // 경험치 획득
+        this.player.gainExp(1);
+
+        // 내구도 감소
+        enemy.durability--;
+        if (enemy.durability <= 0) {
+          this.deck.removeEnemy(enemy);
+          console.log(`${enemy.name}이(가) 덱에서 제거되었습니다!`);
+        }
+
+        // 타일에서 제거
+        t.removePiece();
+
+        // 주변 타일 숫자 업데이트
+        this.board.updateAdjacentNumbers(t.x, t.y);
+      }
+    });
+
+    // 레벨업 체크
+    if (this.player.exp >= this.player.expToNext) {
+      const leveledUp = this.player.levelUp();
+      if (leveledUp) {
+        this.showLevelUpReward();
+      }
+    }
+
+    // 타겟팅 모드 종료
+    this.cancelTargeting();
+    this.uiManager.updateStats();
+    this.uiManager.render();
   }
 }

@@ -114,16 +114,17 @@ class EffectHandler {
       case 'bomb_attack':
         // 3×3 영역의 블록과 아이템 파괴
         if (context.tile && game) {
-          const row = context.tile.row;
-          const col = context.tile.col;
+          const centerY = context.tile.y;
+          const centerX = context.tile.x;
           const board = game.board;
 
-          for (let r = row - 1; r <= row + 1; r++) {
-            for (let c = col - 1; c <= col + 1; c++) {
-              const tile = board.getTile(r, c);
+          for (let dy = -1; dy <= 1; dy++) {
+            for (let dx = -1; dx <= 1; dx++) {
+              const tile = board.getTile(centerX + dx, centerY + dy);
               if (tile) {
                 if (tile.hasBlock()) {
                   tile.removeBlock();
+                  tile.explored = true;
                 }
                 if (tile.hasPiece() && tile.piece.type === 'item') {
                   tile.removePiece();
@@ -146,16 +147,17 @@ class EffectHandler {
       case 'bomb_death':
         if (event === 'on_death' && game && context.tile) {
           // 폭탄쥐 사망 시 주변 3×3 폭발
-          const row = context.tile.row;
-          const col = context.tile.col;
+          const centerY = context.tile.y;
+          const centerX = context.tile.x;
           const board = game.board;
 
-          for (let r = row - 1; r <= row + 1; r++) {
-            for (let c = col - 1; c <= col + 1; c++) {
-              const tile = board.getTile(r, c);
+          for (let dy = -1; dy <= 1; dy++) {
+            for (let dx = -1; dx <= 1; dx++) {
+              const tile = board.getTile(centerX + dx, centerY + dy);
               if (tile) {
                 if (tile.hasBlock()) {
                   tile.removeBlock();
+                  tile.explored = true;
                 }
                 if (tile.hasPiece() && tile.piece.type === 'item') {
                   tile.removePiece();
