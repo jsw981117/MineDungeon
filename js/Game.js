@@ -354,21 +354,25 @@ class Game {
   }
 
   showItemReward(hasCallback = false) {
-    // 아이템 선택지 생성 (3개 무작위)
-    const itemChoices = [];
+    // 아이템/아티팩트 선택지 생성 (3개 무작위)
+    const choices = [];
 
-    // 아이템 풀에서 무작위 선택
+    // 아이템 2개, 아티팩트 1개
     if (typeof ITEMS_DATA !== 'undefined') {
-      const shuffled = [...ITEMS_DATA].sort(() => Math.random() - 0.5);
-      shuffled.slice(0, 3).forEach(itemData => {
-        itemChoices.push({ ...itemData, type: 'item' });
+      const shuffledItems = [...ITEMS_DATA].sort(() => Math.random() - 0.5);
+      shuffledItems.slice(0, 2).forEach(itemData => {
+        choices.push({ ...itemData, type: 'item' });
       });
     }
 
-    // 아티팩트는 추후 구현
-    // 현재는 아이템만 3개 표시
+    if (typeof ARTIFACTS_DATA !== 'undefined') {
+      const shuffledArtifacts = [...ARTIFACTS_DATA].sort(() => Math.random() - 0.5);
+      shuffledArtifacts.slice(0, 1).forEach(artifactData => {
+        choices.push({ ...artifactData, type: 'artifact' });
+      });
+    }
 
-    showItemRewardPopup(itemChoices, hasCallback);
+    showItemRewardPopup(choices, hasCallback);
   }
 
   showEnemyAddReward() {

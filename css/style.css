@@ -256,6 +256,10 @@ body.landscape #gameContainer {
   border-left: 4px solid #4af;
 }
 
+.artifact-item {
+  border-left: 4px solid #fc4;
+}
+
 .deck-item-name {
   font-size: calc(min(2vh, 16px) * var(--text-scale));
   font-weight: bold;

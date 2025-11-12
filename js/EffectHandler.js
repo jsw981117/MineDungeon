@@ -232,6 +232,50 @@ class EffectHandler {
         }
         break;
 
+      // 아티팩트 효과
+      case 'increase_attack':
+        if (player && context.value) {
+          player.attack += context.value;
+          console.log(`공격력 +${context.value}!`);
+        }
+        break;
+
+      case 'increase_max_hp':
+        if (player && context.value) {
+          player.maxHp += context.value;
+          player.hp += context.value; // 현재 HP도 증가
+          console.log(`최대 HP +${context.value}!`);
+        }
+        break;
+
+      case 'increase_defense':
+        if (player && context.value) {
+          player.defense += context.value;
+          console.log(`방어력 +${context.value}!`);
+        }
+        break;
+
+      case 'increase_crit_rate':
+        if (player && context.value) {
+          player.critRate += context.value;
+          console.log(`치명타율 +${context.value}%!`);
+        }
+        break;
+
+      case 'increase_crit_damage':
+        if (player && context.value) {
+          player.critDamage += context.value;
+          console.log(`치명타 피해 +${context.value}%!`);
+        }
+        break;
+
+      case 'increase_evasion':
+        if (player && context.value) {
+          player.evasion += context.value;
+          console.log(`회피율 +${context.value}%!`);
+        }
+        break;
+
       default:
         console.warn(`Unknown effect: ${effectId}`);
     }

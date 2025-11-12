@@ -61,8 +61,12 @@ class Player {
     }
   }
 
-  addArtifact(artifact) {
+  addArtifact(artifact, game = null) {
     this.artifacts.push(artifact);
+    // 아티팩트 효과 즉시 적용
+    if (game) {
+      artifact.apply(this, game);
+    }
   }
 
   getAttack() {

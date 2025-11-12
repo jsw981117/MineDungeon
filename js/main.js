@@ -191,9 +191,12 @@ function selectItemReward(index) {
   if (choice.type === 'item') {
     // 덱에 아이템 추가
     game.deck.addItem(new Item(choice));
+    game.showMessage(`${choice.name} 획득!`);
   } else if (choice.type === 'artifact') {
-    // 아티팩트 추가 (추후 구현)
-    console.log('아티팩트 획득:', choice.name);
+    // 아티팩트 추가 및 효과 적용
+    const artifact = new Artifact(choice);
+    game.player.addArtifact(artifact, game);
+    game.showMessage(`${choice.name} 획득!`);
   }
 
   closePopup();
@@ -254,6 +257,7 @@ function showDeckPopup() {
 
   const enemies = game.deck.getAllEnemies();
   const items = game.deck.getAllItems();
+  const artifacts = game.player.artifacts;
 
   let enemiesHTML = '<div class="deck-section"><div class="deck-section-title">몬스터 피스</div><div class="deck-list">';
   if (enemies.length === 0) {
@@ -290,10 +294,25 @@ function showDeckPopup() {
   }
   itemsHTML += '</div></div>';
 
+  let artifactsHTML = '<div class="deck-section"><div class="deck-section-title">아티팩트</div><div class="deck-list">';
+  if (artifacts.length === 0) {
+    artifactsHTML += '<div class="deck-empty">없음</div>';
+  } else {
+    artifacts.forEach((artifact, index) => {
+      artifactsHTML += `
+        <div class="deck-item artifact-item" onclick="showPieceTooltip(event, 'artifact', ${index})">
+          <div class="deck-item-name">${artifact.name}</div>
+        </div>
+      `;
+    });
+  }
+  artifactsHTML += '</div></div>';
+
   content.innerHTML = `
     <div class="popup-title">덱 확인</div>
     ${enemiesHTML}
     ${itemsHTML}
+    ${artifactsHTML}
     <div class="popup-buttons">
       <button class="popup-button" onclick="closePopup()">닫기</button>
     </div>
@@ -318,6 +337,8 @@ function showPieceTooltip(event, type, index) {
     piece = game.deck.getAllEnemies()[index];
   } else if (type === 'item') {
     piece = game.deck.getAllItems()[index];
+  } else if (type === 'artifact') {
+    piece = game.player.artifacts[index];
   }
 
   if (!piece) return;
@@ -343,6 +364,9 @@ function showPieceTooltip(event, type, index) {
     tooltipHTML += `
       <div class="tooltip-stat">내구도: ${piece.durability}</div>
     `;
+    if (piece.description) tooltipHTML += `<div class="tooltip-description">${piece.description}</div>`;
+    if (piece.effect) tooltipHTML += `<div class="tooltip-effect">효과: ${piece.effect}</div>`;
+  } else if (type === 'artifact') {
     if (piece.description) tooltipHTML += `<div class="tooltip-description">${piece.description}</div>`;
     if (piece.effect) tooltipHTML += `<div class="tooltip-effect">효과: ${piece.effect}</div>`;
   }
