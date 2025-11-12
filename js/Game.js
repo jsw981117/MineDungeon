@@ -66,6 +66,8 @@ class Game {
 
   nextFloor() {
     this.currentFloor++;
+    // 층 단위 버프 초기화
+    this.player.clearFloorBuffs();
     this.startFloor();
   }
 
