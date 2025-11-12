@@ -280,14 +280,10 @@ function showDeckPopup() {
     itemsHTML += '<div class="deck-empty">없음</div>';
   } else {
     items.forEach((item, index) => {
-      // 타겟팅이 필요한 아이템인지 확인
-      const needsTargeting = ['bow_attack', 'staff_attack', 'bomb_attack', 'poison_apply_3', 'burn_apply_4', 'freeze_apply'].includes(item.effect);
-
       itemsHTML += `
         <div class="deck-item item-item" onclick="showPieceTooltip(event, 'item', ${index})">
           <div class="deck-item-name">${item.name}</div>
           <div class="deck-item-durability">내구도: ${item.durability}</div>
-          ${needsTargeting ? `<button class="use-item-btn" onclick="useItemFromDeck(event, ${index})">사용</button>` : ''}
         </div>
       `;
     });
@@ -419,28 +415,6 @@ document.addEventListener('click', (e) => {
     if (tooltip) tooltip.remove();
   }
 });
-
-// 덱에서 아이템 사용
-function useItemFromDeck(event, index) {
-  event.stopPropagation();
-
-  const item = game.deck.getAllItems()[index];
-  if (!item) return;
-
-  // 타겟팅 타입 결정
-  let targetingType = 'single';
-  if (item.effect === 'staff_attack') {
-    targetingType = 'row'; // 또는 'col' - 일단 row로
-  } else if (item.effect === 'bomb_attack') {
-    targetingType = 'area';
-  }
-
-  // 타겟팅 모드 시작
-  game.startTargeting(item, targetingType);
-
-  // 팝업 닫기
-  closePopup();
-}
 
 // 이벤트 선택지 팝업
 function showEventChoicesPopup(event) {

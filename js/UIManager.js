@@ -239,20 +239,7 @@ class UIManager {
 
         const name = piece.name;
         const maxWidth = this.tileSize * 0.6;
-
-        // 이름과 설명 위치 조정
-        const nameY = piece.description ? py + this.tileSize / 2 - this.tileSize * 0.08 : py + this.tileSize / 2;
-        this.wrapText(name, px + this.tileSize / 2, nameY, maxWidth, this.tileSize * 0.15);
-
-        // 설명 표시 (있는 경우)
-        if (piece.description) {
-          this.ctx.fillStyle = '#555';
-          this.ctx.font = `${this.tileSize * 0.08}px Arial`;
-          const descY = py + this.tileSize / 2 + this.tileSize * 0.1;
-          // 설명이 너무 길면 자르기
-          const shortDesc = piece.description.length > 15 ? piece.description.substring(0, 15) + '...' : piece.description;
-          this.ctx.fillText(shortDesc, px + this.tileSize / 2, descY);
-        }
+        this.wrapText(name, px + this.tileSize / 2, py + this.tileSize / 2, maxWidth, this.tileSize * 0.15);
 
         // 적이면 체력바 및 상태 효과 표시
         if (piece.type === 'enemy') {
