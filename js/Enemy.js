@@ -78,6 +78,13 @@ class Enemy extends Piece {
   playerAttack(player, game, tile = null) {
     console.log(`${this.name}에게 공격!`);
 
+    // 플레이어 빙결 체크
+    if (player.hasStatusEffect('freeze')) {
+      console.log('빙결 상태! 공격이 무효화되었습니다.');
+      player.removeStatusEffect('freeze');
+      return false; // 적 생존, 반격 없음
+    }
+
     // 플레이어가 먼저 공격
     const playerResult = CombatCalculator.playerAttackEnemy(player, this);
 
