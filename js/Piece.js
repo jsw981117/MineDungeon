@@ -4,6 +4,7 @@ class Piece {
     this.name = data.name;
     this.type = data.type;
     this.effect = data.effect || null;
+    this.description = data.description || null;
   }
 
   interact(player, game) {
