@@ -417,3 +417,47 @@ function useItemFromDeck(event, index) {
   // 팝업 닫기
   closePopup();
 }
+
+// 이벤트 선택지 팝업
+function showEventChoicesPopup(event) {
+  const popup = document.getElementById('popup');
+  const content = document.querySelector('.popup-content');
+
+  if (!popup || !content) return;
+
+  let buttonsHTML = '';
+  event.choices.forEach((choice, index) => {
+    buttonsHTML += `<button class="popup-button reward-button" onclick="selectEventChoice('${event.id}', ${index})">${choice.text}</button>`;
+  });
+
+  content.innerHTML = `
+    <div class="popup-title">${event.name}</div>
+    <div class="popup-text">${event.description || ''}</div>
+    <div class="popup-buttons reward-buttons">
+      ${buttonsHTML}
+    </div>
+  `;
+
+  popup.classList.add('active');
+
+  // 이벤트 정보 저장
+  popup.dataset.eventId = event.id;
+}
+
+// 이벤트 선택지 선택
+function selectEventChoice(eventId, choiceIndex) {
+  // 보드에서 해당 이벤트 찾기
+  const tiles = game.board.getTiles();
+  const eventTile = tiles.find(t => t.hasPiece() && t.piece.type === 'event' && t.piece.id === eventId);
+
+  if (eventTile && eventTile.piece) {
+    const event = eventTile.piece;
+    event.selectChoice(choiceIndex, game.player, game);
+
+    // 이벤트 제거
+    eventTile.removePiece();
+    game.uiManager.render();
+  }
+
+  closePopup();
+}

@@ -323,8 +323,7 @@ class Game {
   }
 
   showEventChoices(event) {
-    // 추후 팝업으로 구현
-    console.log('Event:', event.name);
+    showEventChoicesPopup(event);
   }
 
   showShop() {
