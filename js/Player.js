@@ -42,8 +42,8 @@ class Player {
   }
 
   takeDamage(amount) {
-    const damage = Math.max(0, amount - this.defense);
-    this.hp = Math.max(0, this.hp - damage);
+    // CombatCalculator에서 이미 방어력을 계산했으므로 그대로 적용
+    this.hp = Math.max(0, this.hp - amount);
   }
 
   heal(amount) {

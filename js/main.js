@@ -7,6 +7,7 @@ window.addEventListener('DOMContentLoaded', () => {
 
   setupSettingsButton();
   setupDeckButton();
+  setupStatsButton();
 });
 
 function setupSettingsButton() {
@@ -25,6 +26,73 @@ function setupDeckButton() {
       showDeckPopup();
     });
   }
+}
+
+function setupStatsButton() {
+  const statsBtn = document.getElementById('statsBtn');
+  if (statsBtn) {
+    statsBtn.addEventListener('click', () => {
+      showStatsPopup();
+    });
+  }
+}
+
+function showStatsPopup() {
+  const popup = document.getElementById('popup');
+  const content = document.querySelector('.popup-content');
+
+  if (!popup || !content) return;
+
+  const player = game.player;
+
+  // 층 버프 정보
+  let floorBuffsHTML = '';
+  if (player.floorBuffs.length > 0) {
+    floorBuffsHTML = '<div class="stats-section-title">층 버프</div>';
+    player.floorBuffs.forEach(buff => {
+      floorBuffsHTML += `<div class="stat-item">${buff.stat}: +${buff.value}</div>`;
+    });
+  }
+
+  // 아티팩트 정보
+  let artifactsHTML = '';
+  if (player.artifacts.length > 0) {
+    artifactsHTML = '<div class="stats-section-title">보유 아티팩트</div>';
+    player.artifacts.forEach(artifact => {
+      artifactsHTML += `<div class="stat-item">${artifact.name}</div>`;
+    });
+  }
+
+  content.innerHTML = `
+    <div class="popup-title">플레이어 능력치</div>
+    <div class="popup-text stats-popup">
+      <div class="stats-section">
+        <div class="stats-section-title">기본 능력치</div>
+        <div class="stat-item">레벨: ${player.level}</div>
+        <div class="stat-item">HP: ${player.hp}/${player.maxHp}</div>
+        <div class="stat-item">MP: ${player.mp}/${player.maxMp}</div>
+        <div class="stat-item">골드: 💰 ${player.gold}</div>
+      </div>
+
+      <div class="stats-section">
+        <div class="stats-section-title">전투 능력치</div>
+        <div class="stat-item">공격력: ${player.attack}</div>
+        <div class="stat-item">마법력: ${player.magic}</div>
+        <div class="stat-item">방어력: ${player.defense}</div>
+        <div class="stat-item">치명타율: ${player.critRate}%</div>
+        <div class="stat-item">치명타 피해: ${player.critDamage}%</div>
+        <div class="stat-item">회피율: ${player.evasion}%</div>
+      </div>
+
+      ${floorBuffsHTML ? `<div class="stats-section">${floorBuffsHTML}</div>` : ''}
+      ${artifactsHTML ? `<div class="stats-section">${artifactsHTML}</div>` : ''}
+    </div>
+    <div class="popup-buttons">
+      <button class="popup-button" onclick="closePopup()">닫기</button>
+    </div>
+  `;
+
+  popup.classList.add('active');
 }
 
 function showSettingsPopup() {

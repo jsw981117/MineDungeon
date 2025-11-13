@@ -392,6 +392,34 @@ body.landscape #gameContainer {
   color: #fc4;
 }
 
+/* 능력치 팝업 */
+.stats-popup {
+  max-width: 500px;
+}
+
+.stats-section {
+  margin-bottom: min(2vh, 16px);
+  padding: min(1.5vh, 12px);
+  background-color: rgba(255, 255, 255, 0.05);
+  border-radius: min(0.5vh, 4px);
+}
+
+.stats-section-title {
+  font-size: calc(min(2.5vh, 20px) * var(--text-scale));
+  font-weight: bold;
+  margin-bottom: min(1vh, 8px);
+  color: var(--color-button);
+  border-bottom: 1px solid var(--color-button);
+  padding-bottom: min(0.5vh, 4px);
+}
+
+.stat-item {
+  font-size: calc(min(2vh, 16px) * var(--text-scale));
+  margin-bottom: min(0.5vh, 4px);
+  color: #ccc;
+  padding: min(0.5vh, 4px);
+}
+
 /* 게임 메시지 오버레이 */
 .game-message {
   position: fixed;
