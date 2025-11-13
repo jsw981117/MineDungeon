@@ -119,13 +119,7 @@ class UIManager {
     if (this.holdTimer) {
       clearTimeout(this.holdTimer);
       this.holdTimer = null;
-
-      // 타겟팅 모드일 때는 타겟 선택
-      if (this.game.targetingMode) {
-        this.game.useItemOnTarget(tileX, tileY);
-      } else {
-        this.game.onTileClick(tileX, tileY);
-      }
+      this.game.onTileClick(tileX, tileY);
     }
 
     this.holdStartPos = null;
@@ -177,12 +171,6 @@ class UIManager {
     // 타일 배경
     this.ctx.fillStyle = '#ccc';
     this.ctx.fillRect(px, py, this.tileSize, this.tileSize);
-
-    // 타겟팅 모드일 때 선택 가능한 타일 하이라이트
-    if (this.game.targetingMode && this.isTargetable(tile, x, y)) {
-      this.ctx.fillStyle = 'rgba(255, 255, 0, 0.3)';
-      this.ctx.fillRect(px, py, this.tileSize, this.tileSize);
-    }
 
     // 타일 테두리
     this.ctx.strokeStyle = '#000';
@@ -444,26 +432,6 @@ class UIManager {
       tooltip.remove();
       this.tooltipVisible = false;
     }
-  }
-
-  // 타겟팅 가능한 타일인지 체크
-  isTargetable(tile, x, y) {
-    if (!this.game.targetingMode || !this.game.targetingType) return false;
-
-    const type = this.game.targetingType;
-
-    if (type === 'single') {
-      // 공개된 적만 선택 가능
-      return tile.explored && tile.hasPiece() && tile.piece.type === 'enemy';
-    } else if (type === 'row' || type === 'col') {
-      // 적이 있는 행/열만 선택 가능
-      return tile.explored;
-    } else if (type === 'area') {
-      // 모든 타일 선택 가능
-      return true;
-    }
-
-    return false;
   }
 
   // 상태 효과 아이콘 표시

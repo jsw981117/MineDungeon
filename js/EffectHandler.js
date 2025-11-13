@@ -61,23 +61,62 @@ class EffectHandler {
 
       // 아이템 효과 - 키워드 부여
       case 'poison_apply_3':
-        if (target && target.type === 'enemy') {
-          target.addStatusEffect('poison', 3);
-          console.log(`${target.name}에게 독 3 부여!`);
+        // 공개된 적 중 랜덤 선택하여 독 부여
+        if (game) {
+          const revealedEnemies = [];
+          game.board.getTiles().forEach(t => {
+            if (t.explored && t.hasPiece() && t.piece.type === 'enemy') {
+              revealedEnemies.push(t.piece);
+            }
+          });
+
+          if (revealedEnemies.length > 0) {
+            const target = revealedEnemies[Math.floor(Math.random() * revealedEnemies.length)];
+            target.addStatusEffect('poison', 3);
+            console.log(`${target.name}에게 독 3 부여!`);
+          } else {
+            console.log('타겟할 적이 없습니다!');
+          }
         }
         break;
 
       case 'burn_apply_4':
-        if (target && target.type === 'enemy') {
-          target.addStatusEffect('burn', 4);
-          console.log(`${target.name}에게 화상 4 부여!`);
+        // 공개된 적 중 랜덤 선택하여 화상 부여
+        if (game) {
+          const revealedEnemies = [];
+          game.board.getTiles().forEach(t => {
+            if (t.explored && t.hasPiece() && t.piece.type === 'enemy') {
+              revealedEnemies.push(t.piece);
+            }
+          });
+
+          if (revealedEnemies.length > 0) {
+            const target = revealedEnemies[Math.floor(Math.random() * revealedEnemies.length)];
+            target.addStatusEffect('burn', 4);
+            console.log(`${target.name}에게 화상 4 부여!`);
+          } else {
+            console.log('타겟할 적이 없습니다!');
+          }
         }
         break;
 
       case 'freeze_apply':
-        if (target && target.type === 'enemy') {
-          target.addStatusEffect('freeze');
-          console.log(`${target.name}에게 빙결 부여!`);
+        // 공개된 적 중 랜덤 선택하여 빙결 부여
+        if (game) {
+          const revealedEnemies = [];
+          game.board.getTiles().forEach(t => {
+            if (t.explored && t.hasPiece() && t.piece.type === 'enemy') {
+              revealedEnemies.push(t.piece);
+            }
+          });
+
+          if (revealedEnemies.length > 0) {
+            const target = revealedEnemies[Math.floor(Math.random() * revealedEnemies.length)];
+            target.addStatusEffect('freeze');
+            console.log(`${target.name}에게 빙결 부여!`);
+          } else {
+            console.log('타겟할 적이 없습니다!');
+          }
         }
         break;
 
@@ -90,49 +129,121 @@ class EffectHandler {
 
       // 아이템 효과 - 공격 아이템
       case 'bow_attack':
-        // 공개된 적 하나에게 피해 (타겟 선택 필요)
-        if (target && target.type === 'enemy') {
-          const damage = player.getAttack();
-          target.hp -= damage;
-          console.log(`${target.name}에게 ${damage} 피해!`);
+        // 공개된 적 하나에게 자동 공격
+        if (game && player) {
+          const revealedEnemies = [];
+          game.board.getTiles().forEach(t => {
+            if (t.explored && t.hasPiece() && t.piece.type === 'enemy') {
+              revealedEnemies.push(t.piece);
+            }
+          });
+
+          if (revealedEnemies.length > 0) {
+            const target = revealedEnemies[Math.floor(Math.random() * revealedEnemies.length)];
+            const damage = player.getAttack();
+            target.hp -= damage;
+            console.log(`${target.name}에게 ${damage} 피해!`);
+          } else {
+            console.log('타겟할 적이 없습니다!');
+          }
         }
         break;
 
       case 'staff_attack':
-        // 열/행 전체 공격 (타겟 선택 필요)
-        if (context.targets && player) {
-          const damage = Math.floor(player.magic * 1.5);
-          context.targets.forEach(t => {
-            if (t.type === 'enemy') {
-              t.hp -= damage;
-              console.log(`${t.name}에게 ${damage} 피해!`);
+        // 적이 가장 많은 행 또는 열 전체 공격
+        if (game && player) {
+          const board = game.board;
+          let bestTargets = [];
+          let maxEnemies = 0;
+
+          // 각 행 체크
+          for (let y = 0; y < board.height; y++) {
+            const rowEnemies = [];
+            for (let x = 0; x < board.width; x++) {
+              const tile = board.getTile(x, y);
+              if (tile && tile.explored && tile.hasPiece() && tile.piece.type === 'enemy') {
+                rowEnemies.push(tile.piece);
+              }
             }
-          });
+            if (rowEnemies.length > maxEnemies) {
+              maxEnemies = rowEnemies.length;
+              bestTargets = rowEnemies;
+            }
+          }
+
+          // 각 열 체크
+          for (let x = 0; x < board.width; x++) {
+            const colEnemies = [];
+            for (let y = 0; y < board.height; y++) {
+              const tile = board.getTile(x, y);
+              if (tile && tile.explored && tile.hasPiece() && tile.piece.type === 'enemy') {
+                colEnemies.push(tile.piece);
+              }
+            }
+            if (colEnemies.length > maxEnemies) {
+              maxEnemies = colEnemies.length;
+              bestTargets = colEnemies;
+            }
+          }
+
+          if (bestTargets.length > 0) {
+            const damage = Math.floor(player.magic * 1.5);
+            bestTargets.forEach(enemy => {
+              enemy.hp -= damage;
+              console.log(`${enemy.name}에게 ${damage} 피해!`);
+            });
+          } else {
+            console.log('타겟할 적이 없습니다!');
+          }
         }
         break;
 
       case 'bomb_attack':
-        // 3×3 영역의 블록과 아이템 파괴
-        if (context.tile && game) {
-          const centerY = context.tile.y;
-          const centerX = context.tile.x;
+        // 블록과 아이템이 가장 많은 3×3 영역 파괴
+        if (game) {
           const board = game.board;
+          let bestX = 0, bestY = 0, maxCount = 0;
 
-          for (let dy = -1; dy <= 1; dy++) {
-            for (let dx = -1; dx <= 1; dx++) {
-              const tile = board.getTile(centerX + dx, centerY + dy);
-              if (tile) {
-                if (tile.hasBlock()) {
-                  tile.removeBlock();
-                  tile.explored = true;
+          // 모든 가능한 3x3 중심점 탐색
+          for (let y = 0; y < board.height; y++) {
+            for (let x = 0; x < board.width; x++) {
+              let count = 0;
+              for (let dy = -1; dy <= 1; dy++) {
+                for (let dx = -1; dx <= 1; dx++) {
+                  const tile = board.getTile(x + dx, y + dy);
+                  if (tile && (tile.hasBlock() || (tile.hasPiece() && tile.piece.type === 'item'))) {
+                    count++;
+                  }
                 }
-                if (tile.hasPiece() && tile.piece.type === 'item') {
-                  tile.removePiece();
-                }
+              }
+              if (count > maxCount) {
+                maxCount = count;
+                bestX = x;
+                bestY = y;
               }
             }
           }
-          console.log('폭탄 폭발!');
+
+          // 최적 위치에 폭탄 투하
+          if (maxCount > 0) {
+            for (let dy = -1; dy <= 1; dy++) {
+              for (let dx = -1; dx <= 1; dx++) {
+                const tile = board.getTile(bestX + dx, bestY + dy);
+                if (tile) {
+                  if (tile.hasBlock()) {
+                    tile.removeBlock();
+                    tile.explored = true;
+                  }
+                  if (tile.hasPiece() && tile.piece.type === 'item') {
+                    tile.removePiece();
+                  }
+                }
+              }
+            }
+            console.log('폭탄 폭발!');
+          } else {
+            console.log('파괴할 대상이 없습니다!');
+          }
         }
         break;
 
