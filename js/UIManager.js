@@ -9,6 +9,8 @@ class UIManager {
     this.holdTimer = null;
     this.holdStartPos = null;
     this.hoverTile = null; // 현재 hover 중인 타일
+    this.hoverPiece = null; // 현재 hover 중인 피스
+    this.effectRangeTiles = []; // 효과 범위 타일들
     this.tooltipVisible = false;
     this.setupCanvas();
     this.setupEvents();
@@ -171,6 +173,13 @@ class UIManager {
     // 타일 배경
     this.ctx.fillStyle = '#ccc';
     this.ctx.fillRect(px, py, this.tileSize, this.tileSize);
+
+    // 효과 범위 하이라이트
+    const isInRange = this.effectRangeTiles.some(t => t.x === x && t.y === y);
+    if (isInRange) {
+      this.ctx.fillStyle = 'rgba(255, 200, 0, 0.4)';
+      this.ctx.fillRect(px, py, this.tileSize, this.tileSize);
+    }
 
     // 타일 테두리
     this.ctx.strokeStyle = '#000';
@@ -355,12 +364,18 @@ class UIManager {
     if (tile && tile.explored && tile.hasPiece() && !tile.hasBlock()) {
       if (!this.hoverTile || this.hoverTile.x !== tileX || this.hoverTile.y !== tileY) {
         this.hoverTile = { x: tileX, y: tileY };
+        this.hoverPiece = tile.piece;
+        this.effectRangeTiles = this.calculateEffectRange(tile.piece);
         this.showTileTooltip(tile.piece, clientX, clientY);
+        this.render(); // 효과 범위 표시를 위해 다시 렌더링
       }
     } else {
       if (this.hoverTile) {
         this.hoverTile = null;
+        this.hoverPiece = null;
+        this.effectRangeTiles = [];
         this.hideTileTooltip();
+        this.render(); // 효과 범위 제거를 위해 다시 렌더링
       }
     }
   }
@@ -432,6 +447,172 @@ class UIManager {
       tooltip.remove();
       this.tooltipVisible = false;
     }
+  }
+
+  // 효과 범위 계산
+  calculateEffectRange(piece) {
+    if (!piece || !piece.effect) return [];
+
+    const board = this.game.board;
+    const tiles = [];
+
+    switch (piece.effect) {
+      case 'bow_attack':
+      case 'poison_apply_3':
+      case 'burn_apply_4':
+      case 'freeze_apply':
+        // 단일 타겟: 공개된 모든 적 타일
+        board.getTiles().forEach(tile => {
+          if (tile.explored && tile.hasPiece() && tile.piece.type === 'enemy') {
+            tiles.push({ x: tile.x, y: tile.y });
+          }
+        });
+        break;
+
+      case 'staff_attack':
+        // 행/열 전체: 공개된 적이 있는 모든 행과 열
+        const enemyPositions = [];
+        board.getTiles().forEach(tile => {
+          if (tile.explored && tile.hasPiece() && tile.piece.type === 'enemy') {
+            enemyPositions.push({ x: tile.x, y: tile.y });
+          }
+        });
+
+        // 각 행의 적 수 계산
+        const rowCounts = {};
+        const colCounts = {};
+        enemyPositions.forEach(pos => {
+          rowCounts[pos.y] = (rowCounts[pos.y] || 0) + 1;
+          colCounts[pos.x] = (colCounts[pos.x] || 0) + 1;
+        });
+
+        // 최대 적 수를 가진 행/열 찾기
+        let maxCount = 0;
+        let bestRows = [];
+        let bestCols = [];
+
+        Object.keys(rowCounts).forEach(row => {
+          const count = rowCounts[row];
+          if (count > maxCount) {
+            maxCount = count;
+            bestRows = [parseInt(row)];
+          } else if (count === maxCount) {
+            bestRows.push(parseInt(row));
+          }
+        });
+
+        Object.keys(colCounts).forEach(col => {
+          const count = colCounts[col];
+          if (count > maxCount) {
+            maxCount = count;
+            bestRows = [];
+            bestCols = [parseInt(col)];
+          } else if (count === maxCount && bestRows.length === 0) {
+            bestCols.push(parseInt(col));
+          }
+        });
+
+        // 최적 행 하이라이트
+        bestRows.forEach(row => {
+          for (let x = 0; x < board.width; x++) {
+            tiles.push({ x, y: row });
+          }
+        });
+
+        // 최적 열 하이라이트
+        bestCols.forEach(col => {
+          for (let y = 0; y < board.height; y++) {
+            tiles.push({ x: col, y });
+          }
+        });
+        break;
+
+      case 'bomb_attack':
+        // 3x3 영역: 블록/아이템이 있는 모든 위치 주변 3x3
+        let bestX = 0, bestY = 0, maxBlockCount = 0;
+
+        // 최적 위치 찾기
+        for (let y = 0; y < board.height; y++) {
+          for (let x = 0; x < board.width; x++) {
+            let count = 0;
+            for (let dy = -1; dy <= 1; dy++) {
+              for (let dx = -1; dx <= 1; dx++) {
+                const tile = board.getTile(x + dx, y + dy);
+                if (tile && (tile.hasBlock() || (tile.hasPiece() && tile.piece.type === 'item'))) {
+                  count++;
+                }
+              }
+            }
+            if (count > maxBlockCount) {
+              maxBlockCount = count;
+              bestX = x;
+              bestY = y;
+            }
+          }
+        }
+
+        // 최적 위치 주변 3x3 하이라이트
+        if (maxBlockCount > 0) {
+          for (let dy = -1; dy <= 1; dy++) {
+            for (let dx = -1; dx <= 1; dx++) {
+              const tx = bestX + dx;
+              const ty = bestY + dy;
+              if (tx >= 0 && tx < board.width && ty >= 0 && ty < board.height) {
+                tiles.push({ x: tx, y: ty });
+              }
+            }
+          }
+        }
+        break;
+
+      case 'split_on_death':
+        // 슬라임 분열: 주변 8칸
+        if (this.hoverTile) {
+          const cx = this.hoverTile.x;
+          const cy = this.hoverTile.y;
+          const directions = [
+            [-1, -1], [0, -1], [1, -1],
+            [-1, 0],           [1, 0],
+            [-1, 1],  [0, 1],  [1, 1]
+          ];
+          directions.forEach(([dx, dy]) => {
+            const tx = cx + dx;
+            const ty = cy + dy;
+            if (tx >= 0 && tx < board.width && ty >= 0 && ty < board.height) {
+              tiles.push({ x: tx, y: ty });
+            }
+          });
+        }
+        break;
+
+      case 'bomb_death':
+        // 폭탄쥐 폭발: 주변 3x3
+        if (this.hoverTile) {
+          const cx = this.hoverTile.x;
+          const cy = this.hoverTile.y;
+          for (let dy = -1; dy <= 1; dy++) {
+            for (let dx = -1; dx <= 1; dx++) {
+              const tx = cx + dx;
+              const ty = cy + dy;
+              if (tx >= 0 && tx < board.width && ty >= 0 && ty < board.height) {
+                tiles.push({ x: tx, y: ty });
+              }
+            }
+          }
+        }
+        break;
+
+      case 'poison_attack':
+      case 'burn_attack':
+        // 적의 전투 효과: 플레이어 피해 (표시 안 함)
+        break;
+
+      default:
+        // 기타 효과는 범위 표시 안 함
+        break;
+    }
+
+    return tiles;
   }
 
   // 상태 효과 아이콘 표시
