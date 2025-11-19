@@ -1,9 +1,8 @@
 class Player {
-  constructor() {
+  constructor(settings) {
     // 기본 능력치
-    this.hp = 100;
-    this.maxHp = 100;
-    this.attack = 1;  // 기본 공격력 1
+    this.hp = settings.getPlayerInitialHp();
+    this.attack = settings.getPlayerAttack();
 
     // 인벤토리 (4칸)
     this.inventory = [null, null, null, null];
@@ -29,7 +28,7 @@ class Player {
   }
 
   heal(amount) {
-    this.hp = Math.min(this.maxHp, this.hp + amount);
+    this.hp += amount;
   }
 
   addItem(item) {
@@ -65,10 +64,6 @@ class Player {
 
   getHp() {
     return this.hp;
-  }
-
-  getMaxHp() {
-    return this.maxHp;
   }
 
   isDead() {

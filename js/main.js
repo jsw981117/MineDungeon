@@ -40,7 +40,7 @@ function showStatsPopup() {
     <div class="popup-text stats-popup">
       <div class="stats-section">
         <div class="stats-section-title">능력치</div>
-        <div class="stat-item">HP: ${player.hp}/${player.maxHp}</div>
+        <div class="stat-item">HP: ${player.hp}</div>
         <div class="stat-item">공격력: ${player.getAttack()} (기본: ${player.attack})</div>
       </div>
 
@@ -49,7 +49,7 @@ function showStatsPopup() {
         ${player.inventory.map((item, i) => {
           if (item) {
             const equipped = player.equippedSlot === i ? ' (장착 중)' : '';
-            return `<div class="stat-item">[${i + 1}] ${item.name} (공격력 +${item.attack}, 내구도 ${item.durability}/${item.maxDurability})${equipped}</div>`;
+            return `<div class="stat-item">[${i + 1}] ${item.name} (공격력 +${item.attack}, 내구도 ${item.durability})${equipped}</div>`;
           } else {
             return `<div class="stat-item">[${i + 1}] 비어있음</div>`;
           }
@@ -81,6 +81,8 @@ function showSettingsPopup() {
   const enemyBaseHp = game.settings.getEnemyBaseHp();
   const hpPerFloor = game.settings.getHpPerFloor();
   const attackPerFloors = game.settings.getAttackPerFloors();
+  const playerInitialHp = game.settings.getPlayerInitialHp();
+  const playerAttack = game.settings.getPlayerAttack();
   const items = game.settings.getItems();
 
   content.innerHTML = `
@@ -112,7 +114,9 @@ function showSettingsPopup() {
         <label>아이템 개수: <input type="number" id="itemCountInput" min="0" max="${boardSize * boardSize - 2}" value="${itemCount}" style="width: 60px;"></label><br><br>
         <label>적 기본 체력: <input type="number" id="enemyBaseHpInput" min="1" max="1000" value="${enemyBaseHp}" style="width: 60px;"></label><br><br>
         <label>층당 체력 증가: <input type="number" id="hpPerFloorInput" min="0" max="100" value="${hpPerFloor}" style="width: 60px;"></label><br><br>
-        <label>공격력 증가 (N층마다): <input type="number" id="attackPerFloorsInput" min="1" max="10" value="${attackPerFloors}" style="width: 60px;"></label>
+        <label>공격력 증가 (N층마다): <input type="number" id="attackPerFloorsInput" min="1" max="10" value="${attackPerFloors}" style="width: 60px;"></label><br><br>
+        <label>플레이어 초기 체력: <input type="number" id="playerInitialHpInput" min="1" max="1000" value="${playerInitialHp}" style="width: 60px;"></label><br><br>
+        <label>플레이어 공격력: <input type="number" id="playerAttackInput" min="1" max="100" value="${playerAttack}" style="width: 60px;"></label>
       </div>
 
       <hr style="margin: 20px 0;">
@@ -198,6 +202,14 @@ function showSettingsPopup() {
 
   document.getElementById('attackPerFloorsInput').addEventListener('change', (e) => {
     game.settings.setAttackPerFloors(parseInt(e.target.value));
+  });
+
+  document.getElementById('playerInitialHpInput').addEventListener('change', (e) => {
+    game.settings.setPlayerInitialHp(parseInt(e.target.value));
+  });
+
+  document.getElementById('playerAttackInput').addEventListener('change', (e) => {
+    game.settings.setPlayerAttack(parseInt(e.target.value));
   });
 
   // 아이템 추가 버튼

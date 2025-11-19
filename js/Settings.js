@@ -22,6 +22,8 @@ class Settings {
       this.enemyBaseHp = parsed.enemyBaseHp || 3;
       this.hpPerFloor = parsed.hpPerFloor || 2;
       this.attackPerFloors = parsed.attackPerFloors || 2;
+      this.playerInitialHp = parsed.playerInitialHp || 10;
+      this.playerAttack = parsed.playerAttack || 1;
       this.items = parsed.items || this.getDefaultItems();
     } else {
       // 기본값
@@ -31,6 +33,8 @@ class Settings {
       this.enemyBaseHp = 3;
       this.hpPerFloor = 2;
       this.attackPerFloors = 2;
+      this.playerInitialHp = 10;
+      this.playerAttack = 1;
       this.items = this.getDefaultItems();
     }
   }
@@ -51,6 +55,8 @@ class Settings {
       enemyBaseHp: this.enemyBaseHp,
       hpPerFloor: this.hpPerFloor,
       attackPerFloors: this.attackPerFloors,
+      playerInitialHp: this.playerInitialHp,
+      playerAttack: this.playerAttack,
       items: this.items
     };
     localStorage.setItem('gameSettings', JSON.stringify(settings));
@@ -177,5 +183,23 @@ class Settings {
 
   getAttackPerFloors() {
     return this.attackPerFloors;
+  }
+
+  setPlayerInitialHp(value) {
+    this.playerInitialHp = Math.max(1, Math.min(1000, value));
+    this.saveGameSettings();
+  }
+
+  setPlayerAttack(value) {
+    this.playerAttack = Math.max(1, Math.min(100, value));
+    this.saveGameSettings();
+  }
+
+  getPlayerInitialHp() {
+    return this.playerInitialHp;
+  }
+
+  getPlayerAttack() {
+    return this.playerAttack;
   }
 }

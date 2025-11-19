@@ -5,7 +5,7 @@ class Game {
   }
 
   init() {
-    this.player = new Player();
+    this.player = new Player(this.settings);
     const boardSize = this.settings.getBoardSize();
     this.board = new Board(boardSize, boardSize);
     this.currentFloor = 1;
@@ -237,7 +237,7 @@ class Game {
     this.showMessage('Game Over!');
     setTimeout(() => {
       this.currentFloor = 1;
-      this.player = new Player();
+      this.player = new Player(this.settings);
       this.startFloor();
     }, 2000);
   }

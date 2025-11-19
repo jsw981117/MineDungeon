@@ -491,7 +491,7 @@ class UIManager {
     const attackEl = document.getElementById('attackText');
 
     if (floorEl) floorEl.textContent = `Floor ${floor}`;
-    if (hpEl) hpEl.textContent = `HP: ${player.getHp()}/${player.getMaxHp()}`;
+    if (hpEl) hpEl.textContent = `HP: ${player.getHp()}`;
     if (attackEl) attackEl.textContent = `공격력: ${player.getAttack()}`;
   }
 
@@ -531,14 +531,14 @@ class UIManager {
 
     if (piece.type === 'enemy') {
       tooltipHTML += `
-        <div class="tooltip-stat">HP: ${piece.hp}/${piece.maxHp}</div>
+        <div class="tooltip-stat">HP: ${piece.hp}</div>
         <div class="tooltip-stat">공격력: ${piece.attack}</div>
       `;
       if (piece.description) tooltipHTML += `<div class="tooltip-description">${piece.description}</div>`;
     } else if (piece.type === 'item') {
       tooltipHTML += `
         <div class="tooltip-stat">공격력: +${piece.attack}</div>
-        <div class="tooltip-stat">내구도: ${piece.durability}/${piece.maxDurability}</div>
+        <div class="tooltip-stat">내구도: ${piece.durability}</div>
       `;
       if (piece.description) tooltipHTML += `<div class="tooltip-description">${piece.description}</div>`;
     } else if (piece.type === 'event') {
