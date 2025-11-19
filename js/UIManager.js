@@ -6,13 +6,33 @@ class UIManager {
     this.tileSize = 0;
     this.offsetX = 0;
     this.offsetY = 0;
+
+    // 줌/팬 관련
+    this.scale = 1.0; // 줌 레벨
+    this.panX = 0; // 팬 오프셋 X
+    this.panY = 0; // 팬 오프셋 Y
+    this.isPanning = false;
+    this.lastPanX = 0;
+    this.lastPanY = 0;
+
+    // 터치 관련
+    this.touchStartDist = 0;
+    this.touchStartScale = 1.0;
+
     this.holdTimer = null;
     this.holdStartPos = null;
     this.hoverTile = null;
     this.tooltipVisible = false;
-    this.inventoryHeight = 0; // 인벤토리 UI 높이
+    this.inventoryHeight = 0;
+
     this.setupCanvas();
     this.setupEvents();
+  }
+
+  resetZoomAndPan() {
+    this.scale = 1.0;
+    this.panX = 0;
+    this.panY = 0;
   }
 
   setupCanvas() {
@@ -20,7 +40,6 @@ class UIManager {
     const containerWidth = container.clientWidth;
     const containerHeight = container.clientHeight;
 
-    // 인벤토리 공간 확보 (하단 15%)
     const inventoryRatio = 0.15;
     this.inventoryHeight = containerHeight * inventoryRatio;
     const boardHeight = containerHeight * (1 - inventoryRatio);
@@ -30,16 +49,28 @@ class UIManager {
     this.canvas.width = containerWidth;
     this.canvas.height = containerHeight;
 
-    // 보드 크기에 따라 동적으로 타일 크기 계산
-    const gridSize = this.game.board ? this.game.board.width : 9;
+    const gridSize = this.game.board ? this.game.board.width : 16;
     this.tileSize = boardSize / gridSize;
 
-    // 보드를 중앙에 배치
     this.offsetX = (containerWidth - boardSize) / 2;
     this.offsetY = (boardHeight - boardSize) / 2;
   }
 
   setupEvents() {
+    // 마우스 휠 (줌)
+    this.canvas.addEventListener('wheel', (e) => {
+      e.preventDefault();
+      const delta = -e.deltaY;
+      const scaleChange = delta > 0 ? 1.1 : 0.9;
+
+      const rect = this.canvas.getBoundingClientRect();
+      const mouseX = e.clientX - rect.left;
+      const mouseY = e.clientY - rect.top;
+
+      this.zoom(scaleChange, mouseX, mouseY);
+      this.render();
+    }, { passive: false });
+
     // 마우스 이벤트
     this.canvas.addEventListener('mousedown', (e) => this.handlePointerDown(e, e.clientX, e.clientY));
     this.canvas.addEventListener('mouseup', (e) => this.handlePointerUp(e, e.clientX, e.clientY));
@@ -49,21 +80,16 @@ class UIManager {
     });
     this.canvas.addEventListener('mouseleave', () => {
       this.cancelHold();
+      this.isPanning = false;
       this.hideTileTooltip();
     });
 
     // 우클릭
     this.canvas.addEventListener('contextmenu', (e) => {
       e.preventDefault();
-      const rect = this.canvas.getBoundingClientRect();
-      const x = e.clientX - rect.left - this.offsetX;
-      const y = e.clientY - rect.top - this.offsetY;
-
-      // 보드 영역인지 인벤토리 영역인지 확인
-      if (y >= 0 && y < this.tileSize * this.game.board.height) {
-        const tileX = Math.floor(x / this.tileSize);
-        const tileY = Math.floor(y / this.tileSize);
-        this.game.onTileFlag(tileX, tileY);
+      const coords = this.screenToBoard(e.clientX, e.clientY);
+      if (coords) {
+        this.game.onTileFlag(coords.tileX, coords.tileY);
         this.render();
       }
     });
@@ -71,19 +97,40 @@ class UIManager {
     // 터치 이벤트
     this.canvas.addEventListener('touchstart', (e) => {
       e.preventDefault();
-      const touch = e.touches[0];
-      this.handlePointerDown(e, touch.clientX, touch.clientY);
-    });
-    this.canvas.addEventListener('touchend', (e) => {
-      e.preventDefault();
-      const touch = e.changedTouches[0];
-      this.handlePointerUp(e, touch.clientX, touch.clientY);
-    });
+      if (e.touches.length === 2) {
+        // 핀치 시작
+        this.touchStartDist = this.getTouchDistance(e.touches);
+        this.touchStartScale = this.scale;
+      } else if (e.touches.length === 1) {
+        const touch = e.touches[0];
+        this.handlePointerDown(e, touch.clientX, touch.clientY);
+      }
+    }, { passive: false });
+
     this.canvas.addEventListener('touchmove', (e) => {
       e.preventDefault();
-      const touch = e.touches[0];
-      this.handlePointerMove(e, touch.clientX, touch.clientY);
-    });
+      if (e.touches.length === 2) {
+        // 핀치 줌
+        const dist = this.getTouchDistance(e.touches);
+        const scaleChange = dist / this.touchStartDist;
+        this.scale = Math.max(0.5, Math.min(3.0, this.touchStartScale * scaleChange));
+        this.render();
+      } else if (e.touches.length === 1) {
+        const touch = e.touches[0];
+        this.handlePointerMove(e, touch.clientX, touch.clientY);
+      }
+    }, { passive: false });
+
+    this.canvas.addEventListener('touchend', (e) => {
+      e.preventDefault();
+      if (e.touches.length < 2) {
+        this.touchStartDist = 0;
+      }
+      if (e.changedTouches.length > 0) {
+        const touch = e.changedTouches[0];
+        this.handlePointerUp(e, touch.clientX, touch.clientY);
+      }
+    }, { passive: false });
 
     window.addEventListener('resize', () => {
       this.setupCanvas();
@@ -91,40 +138,76 @@ class UIManager {
     });
   }
 
+  getTouchDistance(touches) {
+    const dx = touches[0].clientX - touches[1].clientX;
+    const dy = touches[0].clientY - touches[1].clientY;
+    return Math.sqrt(dx * dx + dy * dy);
+  }
+
+  zoom(scaleChange, mouseX, mouseY) {
+    const oldScale = this.scale;
+    this.scale = Math.max(0.5, Math.min(3.0, this.scale * scaleChange));
+
+    // 마우스 위치 기준으로 줌
+    const scaleRatio = this.scale / oldScale;
+    this.panX = mouseX - (mouseX - this.panX) * scaleRatio;
+    this.panY = mouseY - (mouseY - this.panY) * scaleRatio;
+  }
+
+  screenToBoard(clientX, clientY) {
+    const rect = this.canvas.getBoundingClientRect();
+    const canvasX = clientX - rect.left;
+    const canvasY = clientY - rect.top;
+
+    // 인벤토리 영역 체크
+    if (canvasY >= this.canvas.height - this.inventoryHeight) {
+      return null;
+    }
+
+    // 줌/팬 적용된 좌표로 변환
+    const boardX = (canvasX - this.panX - this.offsetX) / this.scale;
+    const boardY = (canvasY - this.panY - this.offsetY) / this.scale;
+
+    const tileX = Math.floor(boardX / this.tileSize);
+    const tileY = Math.floor(boardY / this.tileSize);
+
+    return { tileX, tileY, boardX, boardY };
+  }
+
   handlePointerDown(e, clientX, clientY) {
-    // 우클릭은 무시
     if (e.button === 2) return;
 
     const rect = this.canvas.getBoundingClientRect();
-    const x = clientX - rect.left - this.offsetX;
-    const y = clientY - rect.top - this.offsetY;
+    const canvasX = clientX - rect.left;
+    const canvasY = clientY - rect.top;
 
-    // 인벤토리 영역 클릭 체크
-    const invY = clientY - rect.top;
-    if (invY >= this.canvas.height - this.inventoryHeight) {
-      const slotIndex = this.getInventorySlotIndex(clientX - rect.left, invY);
+    // 인벤토리 클릭 체크
+    if (canvasY >= this.canvas.height - this.inventoryHeight) {
+      const slotIndex = this.getInventorySlotIndex(canvasX, canvasY);
       if (slotIndex !== -1) {
         this.game.onInventoryClick(slotIndex);
         return;
       }
     }
 
-    const tileX = Math.floor(x / this.tileSize);
-    const tileY = Math.floor(y / this.tileSize);
+    // 팬 시작
+    this.isPanning = true;
+    this.lastPanX = clientX;
+    this.lastPanY = clientY;
 
-    this.holdStartPos = { x: tileX, y: tileY, clientX, clientY };
+    const coords = this.screenToBoard(clientX, clientY);
+    if (!coords) return;
 
-    const tile = this.game.board.getTile(tileX, tileY);
+    this.holdStartPos = { tileX: coords.tileX, tileY: coords.tileY, clientX, clientY };
 
-    // 홀드 타이머 시작
+    const tile = this.game.board.getTile(coords.tileX, coords.tileY);
     const holdDuration = this.game.settings.getHoldDuration() * 1000;
+
     this.holdTimer = setTimeout(() => {
       if (tile && tile.hasBlock()) {
-        // 블럭이 있으면 마킹
-        this.game.onTileFlag(tileX, tileY);
+        this.game.onTileFlag(coords.tileX, coords.tileY);
         this.render();
       } else if (tile && tile.explored && tile.hasPiece()) {
-        // 피스가 있으면 툴팁 표시
         this.showTileTooltip(tile.piece, clientX, clientY);
       }
       this.holdTimer = null;
@@ -132,36 +215,52 @@ class UIManager {
   }
 
   handlePointerUp(e, clientX, clientY) {
-    // 우클릭은 무시
     if (e.button === 2) return;
 
-    const rect = this.canvas.getBoundingClientRect();
-    const x = clientX - rect.left - this.offsetX;
-    const y = clientY - rect.top - this.offsetY;
-    const tileX = Math.floor(x / this.tileSize);
-    const tileY = Math.floor(y / this.tileSize);
+    this.isPanning = false;
 
-    // 홀드 타이머가 아직 실행 중이면 일반 클릭
+    const coords = this.screenToBoard(clientX, clientY);
+
     if (this.holdTimer) {
       clearTimeout(this.holdTimer);
       this.holdTimer = null;
-      this.game.onTileClick(tileX, tileY);
+
+      // 팬 중이 아니었고 홀드가 아니었으면 클릭으로 처리
+      const panDistance = Math.sqrt(
+        Math.pow(clientX - this.lastPanX, 2) +
+        Math.pow(clientY - this.lastPanY, 2)
+      );
+
+      if (panDistance < 5 && coords) {
+        this.game.onTileClick(coords.tileX, coords.tileY);
+      }
     }
 
     this.holdStartPos = null;
   }
 
   handlePointerMove(e, clientX, clientY) {
+    if (this.isPanning && this.holdTimer === null) {
+      // 드래그로 팬
+      const dx = clientX - this.lastPanX;
+      const dy = clientY - this.lastPanY;
+
+      this.panX += dx;
+      this.panY += dy;
+
+      this.lastPanX = clientX;
+      this.lastPanY = clientY;
+
+      this.render();
+      return;
+    }
+
     if (!this.holdStartPos) return;
 
-    const rect = this.canvas.getBoundingClientRect();
-    const x = clientX - rect.left - this.offsetX;
-    const y = clientY - rect.top - this.offsetY;
-    const tileX = Math.floor(x / this.tileSize);
-    const tileY = Math.floor(y / this.tileSize);
+    const coords = this.screenToBoard(clientX, clientY);
+    if (!coords) return;
 
-    // 다른 타일로 이동하면 홀드 취소
-    if (tileX !== this.holdStartPos.x || tileY !== this.holdStartPos.y) {
+    if (coords.tileX !== this.holdStartPos.tileX || coords.tileY !== this.holdStartPos.tileY) {
       this.cancelHold();
     }
   }
@@ -203,7 +302,10 @@ class UIManager {
     const board = this.game.board;
 
     this.ctx.save();
-    this.ctx.translate(this.offsetX, this.offsetY);
+
+    // 줌/팬 적용
+    this.ctx.translate(this.panX + this.offsetX, this.panY + this.offsetY);
+    this.ctx.scale(this.scale, this.scale);
 
     for (let y = 0; y < board.height; y++) {
       for (let x = 0; x < board.width; x++) {
@@ -219,21 +321,17 @@ class UIManager {
     const px = x * this.tileSize;
     const py = y * this.tileSize;
 
-    // 타일 배경
     this.ctx.fillStyle = '#ccc';
     this.ctx.fillRect(px, py, this.tileSize, this.tileSize);
 
-    // 타일 테두리
     this.ctx.strokeStyle = '#000';
-    this.ctx.lineWidth = 1;
+    this.ctx.lineWidth = 1 / this.scale;
     this.ctx.strokeRect(px, py, this.tileSize, this.tileSize);
 
-    // 블럭
     if (tile.hasBlock()) {
       this.ctx.fillStyle = '#555';
       this.ctx.fillRect(px, py, this.tileSize, this.tileSize);
 
-      // 깃발(해골) 표시
       if (tile.block.isFlagged()) {
         this.ctx.font = `${this.tileSize * 0.5}px Arial`;
         this.ctx.textAlign = 'center';
@@ -243,9 +341,7 @@ class UIManager {
       return;
     }
 
-    // 탐색된 타일
     if (tile.explored) {
-      // 피스가 있으면 피스 렌더링
       if (tile.hasPiece()) {
         const piece = tile.piece;
         let color = '#fff';
@@ -258,7 +354,6 @@ class UIManager {
           color = '#fc4';
         }
 
-        // 배경 원
         this.ctx.fillStyle = color;
         this.ctx.beginPath();
         this.ctx.arc(
@@ -270,23 +365,19 @@ class UIManager {
         );
         this.ctx.fill();
 
-        // 적이면 체력(중앙)과 공격력(우측 상단) 표시
         if (piece.type === 'enemy') {
-          // 중앙에 체력
           this.ctx.fillStyle = '#000';
           this.ctx.font = `bold ${this.tileSize * 0.25}px Arial`;
           this.ctx.textAlign = 'center';
           this.ctx.textBaseline = 'middle';
           this.ctx.fillText(piece.hp, px + this.tileSize / 2, py + this.tileSize / 2);
 
-          // 우측 상단에 공격력
           this.ctx.fillStyle = '#f00';
           this.ctx.font = `bold ${this.tileSize * 0.2}px Arial`;
           this.ctx.textAlign = 'right';
           this.ctx.textBaseline = 'top';
           this.ctx.fillText(piece.attack, px + this.tileSize - 3, py + 3);
         } else {
-          // 아이템/이벤트는 이름 표시
           this.ctx.fillStyle = '#000';
           this.ctx.font = `${this.tileSize * 0.13}px Arial`;
           this.ctx.textAlign = 'center';
@@ -296,7 +387,6 @@ class UIManager {
           this.wrapText(name, px + this.tileSize / 2, py + this.tileSize / 2, maxWidth, this.tileSize * 0.15);
         }
       } else {
-        // 빈칸 - 숫자 표시
         if (tile.adjacentEnemies > 0) {
           this.ctx.fillStyle = this.getNumberColor(tile.adjacentEnemies);
           this.ctx.font = `bold ${this.tileSize * 0.4}px Arial`;
@@ -320,49 +410,40 @@ class UIManager {
     const startX = (this.canvas.width - totalWidth) / 2;
     const startY = this.canvas.height - this.inventoryHeight + slotMargin;
 
-    // 배경
     this.ctx.fillStyle = '#333';
     this.ctx.fillRect(0, this.canvas.height - this.inventoryHeight, this.canvas.width, this.inventoryHeight);
 
-    // 4개의 인벤토리 슬롯
     for (let i = 0; i < 4; i++) {
       const x = startX + i * (slotSize + slotMargin) + slotMargin;
       const y = startY;
 
-      // 슬롯 배경
       const isEquipped = player.equippedSlot === i;
       this.ctx.fillStyle = isEquipped ? '#4a4' : '#555';
       this.ctx.fillRect(x, y, slotSize, slotSize);
 
-      // 슬롯 테두리
       this.ctx.strokeStyle = isEquipped ? '#0f0' : '#fff';
       this.ctx.lineWidth = isEquipped ? 3 : 2;
       this.ctx.strokeRect(x, y, slotSize, slotSize);
 
-      // 아이템이 있으면 표시
       const item = player.inventory[i];
       if (item) {
-        // 아이템 아이콘 (원)
         this.ctx.fillStyle = '#4af';
         this.ctx.beginPath();
         this.ctx.arc(x + slotSize / 2, y + slotSize / 3, slotSize / 4, 0, Math.PI * 2);
         this.ctx.fill();
 
-        // 아이템 이름
         this.ctx.fillStyle = '#fff';
         this.ctx.font = `${slotSize * 0.12}px Arial`;
         this.ctx.textAlign = 'center';
         this.ctx.textBaseline = 'top';
         this.ctx.fillText(item.name, x + slotSize / 2, y + slotSize * 0.55);
 
-        // 공격력 표시
         this.ctx.fillStyle = '#f00';
         this.ctx.font = `bold ${slotSize * 0.15}px Arial`;
         this.ctx.textAlign = 'left';
         this.ctx.textBaseline = 'top';
         this.ctx.fillText(`+${item.attack}`, x + 3, y + 3);
 
-        // 내구도 표시
         this.ctx.fillStyle = '#0ff';
         this.ctx.font = `${slotSize * 0.12}px Arial`;
         this.ctx.textAlign = 'right';
@@ -415,18 +496,20 @@ class UIManager {
   }
 
   handleHover(clientX, clientY) {
-    const rect = this.canvas.getBoundingClientRect();
-    const x = clientX - rect.left - this.offsetX;
-    const y = clientY - rect.top - this.offsetY;
-    const tileX = Math.floor(x / this.tileSize);
-    const tileY = Math.floor(y / this.tileSize);
+    const coords = this.screenToBoard(clientX, clientY);
+    if (!coords) {
+      if (this.hoverTile) {
+        this.hoverTile = null;
+        this.hideTileTooltip();
+      }
+      return;
+    }
 
-    const tile = this.game.board.getTile(tileX, tileY);
+    const tile = this.game.board.getTile(coords.tileX, coords.tileY);
 
-    // 탐색된 타일의 피스에만 툴팁 표시
     if (tile && tile.explored && tile.hasPiece() && !tile.hasBlock()) {
-      if (!this.hoverTile || this.hoverTile.x !== tileX || this.hoverTile.y !== tileY) {
-        this.hoverTile = { x: tileX, y: tileY };
+      if (!this.hoverTile || this.hoverTile.x !== coords.tileX || this.hoverTile.y !== coords.tileY) {
+        this.hoverTile = { x: coords.tileX, y: coords.tileY };
         this.showTileTooltip(tile.piece, clientX, clientY);
       }
     } else {
@@ -438,7 +521,6 @@ class UIManager {
   }
 
   showTileTooltip(piece, clientX, clientY) {
-    // 기존 툴팁 제거
     this.hideTileTooltip();
 
     const tooltip = document.createElement('div');
@@ -466,25 +548,19 @@ class UIManager {
     tooltip.innerHTML = tooltipHTML;
     document.body.appendChild(tooltip);
 
-    // 위치 계산
     const tooltipRect = tooltip.getBoundingClientRect();
     let left = clientX + 15;
     let top = clientY + 15;
 
-    // 오른쪽 경계 체크
     if (left + tooltipRect.width > window.innerWidth) {
       left = clientX - tooltipRect.width - 15;
     }
 
-    // 하단 경계 체크
     if (top + tooltipRect.height > window.innerHeight) {
       top = clientY - tooltipRect.height - 15;
     }
 
-    // 왼쪽 경계 체크
     if (left < 0) left = 10;
-
-    // 상단 경계 체크
     if (top < 0) top = 10;
 
     tooltip.style.left = left + 'px';

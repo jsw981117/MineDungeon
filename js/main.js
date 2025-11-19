@@ -3,7 +3,7 @@ let game;
 window.addEventListener('DOMContentLoaded', () => {
   const canvas = document.getElementById('gameCanvas');
   game = new Game();
-  game.init(canvas);
+  game.initCanvas(canvas);
 
   setupSettingsButton();
   setupStatsButton();
@@ -75,30 +75,80 @@ function showSettingsPopup() {
   const orientation = game.settings.getOrientation();
   const holdDuration = game.settings.getHoldDuration();
 
+  const boardSize = game.settings.getBoardSize();
+  const enemyCount = game.settings.getEnemyCount();
+  const itemCount = game.settings.getItemCount();
+  const enemyBaseHp = game.settings.getEnemyBaseHp();
+  const hpPerFloor = game.settings.getHpPerFloor();
+  const attackPerFloors = game.settings.getAttackPerFloors();
+  const items = game.settings.getItems();
+
   content.innerHTML = `
     <div class="popup-title">설정</div>
-    <div class="popup-text">
-      <label>화면 방향:</label><br>
-      <label><input type="radio" name="orientation" value="portrait" ${orientation === 'portrait' ? 'checked' : ''}> 세로 (9:16)</label><br>
-      <label><input type="radio" name="orientation" value="landscape" ${orientation === 'landscape' ? 'checked' : ''}> 가로 (16:9)</label><br><br>
+    <div class="popup-text" style="max-height: 60vh; overflow-y: auto;">
 
-      <label>홀드 시간 (깃발 표시): <span id="holdDurationValue">${holdDuration.toFixed(1)}초</span></label><br>
-      <input type="range" id="holdDurationSlider" min="0.1" max="2" step="0.1" value="${holdDuration}"><br><br>
+      <div class="settings-section">
+        <h3>UI 설정</h3>
+        <label>화면 방향:</label><br>
+        <label><input type="radio" name="orientation" value="portrait" ${orientation === 'portrait' ? 'checked' : ''}> 세로 (9:16)</label><br>
+        <label><input type="radio" name="orientation" value="landscape" ${orientation === 'landscape' ? 'checked' : ''}> 가로 (16:9)</label><br><br>
 
-      <label>텍스트 크기: <span id="textScaleValue">${textScale.toFixed(1)}</span></label><br>
-      <input type="range" id="textScaleSlider" min="0.5" max="2" step="0.1" value="${textScale}"><br><br>
+        <label>홀드 시간 (깃발 표시): <span id="holdDurationValue">${holdDuration.toFixed(1)}초</span></label><br>
+        <input type="range" id="holdDurationSlider" min="0.1" max="2" step="0.1" value="${holdDuration}"><br><br>
 
-      <label>버튼 크기: <span id="buttonScaleValue">${buttonScale.toFixed(1)}</span></label><br>
-      <input type="range" id="buttonScaleSlider" min="0.5" max="2" step="0.1" value="${buttonScale}">
+        <label>텍스트 크기: <span id="textScaleValue">${textScale.toFixed(1)}</span></label><br>
+        <input type="range" id="textScaleSlider" min="0.5" max="2" step="0.1" value="${textScale}"><br><br>
+
+        <label>버튼 크기: <span id="buttonScaleValue">${buttonScale.toFixed(1)}</span></label><br>
+        <input type="range" id="buttonScaleSlider" min="0.5" max="2" step="0.1" value="${buttonScale}">
+      </div>
+
+      <hr style="margin: 20px 0;">
+
+      <div class="settings-section">
+        <h3>게임 설정</h3>
+        <label>보드 크기: <input type="number" id="boardSizeInput" min="5" max="30" value="${boardSize}" style="width: 60px;"></label><br><br>
+        <label>적 개수: <input type="number" id="enemyCountInput" min="1" max="${boardSize * boardSize - 2}" value="${enemyCount}" style="width: 60px;"></label><br><br>
+        <label>아이템 개수: <input type="number" id="itemCountInput" min="0" max="${boardSize * boardSize - 2}" value="${itemCount}" style="width: 60px;"></label><br><br>
+        <label>적 기본 체력: <input type="number" id="enemyBaseHpInput" min="1" max="1000" value="${enemyBaseHp}" style="width: 60px;"></label><br><br>
+        <label>층당 체력 증가: <input type="number" id="hpPerFloorInput" min="0" max="100" value="${hpPerFloor}" style="width: 60px;"></label><br><br>
+        <label>공격력 증가 (N층마다): <input type="number" id="attackPerFloorsInput" min="1" max="10" value="${attackPerFloors}" style="width: 60px;"></label>
+      </div>
+
+      <hr style="margin: 20px 0;">
+
+      <div class="settings-section">
+        <h3>아이템 관리</h3>
+        <div id="itemsList" style="margin-bottom: 10px;">
+          ${items.map((item, index) => `
+            <div class="item-row" style="margin: 5px 0; padding: 5px; background: #f0f0f0; border-radius: 3px;">
+              <span>${item.name} (공격력: ${item.attack}, 내구도: ${item.durability})</span>
+              <button onclick="editItem(${index})" style="margin-left: 10px;">수정</button>
+              <button onclick="deleteItem(${index})" style="margin-left: 5px;">삭제</button>
+            </div>
+          `).join('')}
+        </div>
+        <button id="addItemBtn" class="popup-button">아이템 추가</button>
+      </div>
+
+      <div id="itemFormContainer" style="display: none; margin-top: 10px; padding: 10px; background: #e8e8e8; border-radius: 5px;">
+        <h4 id="itemFormTitle">새 아이템</h4>
+        <label>이름: <input type="text" id="itemNameInput" style="width: 100px;"></label><br><br>
+        <label>공격력: <input type="number" id="itemAttackInput" min="0" max="100" value="1" style="width: 60px;"></label><br><br>
+        <label>내구도: <input type="number" id="itemDurabilityInput" min="1" max="100" value="1" style="width: 60px;"></label><br><br>
+        <button id="saveItemBtn" class="popup-button">저장</button>
+        <button id="cancelItemBtn" class="popup-button">취소</button>
+      </div>
     </div>
     <div class="popup-buttons">
+      <button class="popup-button" id="restartBtn">게임 재시작</button>
       <button class="popup-button" onclick="closePopup()">닫기</button>
     </div>
   `;
 
   popup.classList.add('active');
 
-  // 화면 방향 라디오 버튼 이벤트
+  // UI 설정 이벤트
   document.querySelectorAll('input[name="orientation"]').forEach(radio => {
     radio.addEventListener('change', (e) => {
       game.settings.setOrientation(e.target.value);
@@ -107,7 +157,6 @@ function showSettingsPopup() {
     });
   });
 
-  // 슬라이더 이벤트
   document.getElementById('holdDurationSlider').addEventListener('input', (e) => {
     const value = parseFloat(e.target.value);
     game.settings.setHoldDuration(value);
@@ -125,6 +174,114 @@ function showSettingsPopup() {
     game.settings.setButtonScale(value);
     document.getElementById('buttonScaleValue').textContent = value.toFixed(1);
   });
+
+  // 게임 설정 이벤트
+  document.getElementById('boardSizeInput').addEventListener('change', (e) => {
+    game.settings.setBoardSize(parseInt(e.target.value));
+  });
+
+  document.getElementById('enemyCountInput').addEventListener('change', (e) => {
+    game.settings.setEnemyCount(parseInt(e.target.value));
+  });
+
+  document.getElementById('itemCountInput').addEventListener('change', (e) => {
+    game.settings.setItemCount(parseInt(e.target.value));
+  });
+
+  document.getElementById('enemyBaseHpInput').addEventListener('change', (e) => {
+    game.settings.setEnemyBaseHp(parseInt(e.target.value));
+  });
+
+  document.getElementById('hpPerFloorInput').addEventListener('change', (e) => {
+    game.settings.setHpPerFloor(parseInt(e.target.value));
+  });
+
+  document.getElementById('attackPerFloorsInput').addEventListener('change', (e) => {
+    game.settings.setAttackPerFloors(parseInt(e.target.value));
+  });
+
+  // 아이템 추가 버튼
+  document.getElementById('addItemBtn').addEventListener('click', () => {
+    showItemForm();
+  });
+
+  // 재시작 버튼
+  document.getElementById('restartBtn').addEventListener('click', () => {
+    closePopup();
+    game.restart();
+  });
+}
+
+// 아이템 폼 표시
+function showItemForm(editIndex = null) {
+  const formContainer = document.getElementById('itemFormContainer');
+  const formTitle = document.getElementById('itemFormTitle');
+  const nameInput = document.getElementById('itemNameInput');
+  const attackInput = document.getElementById('itemAttackInput');
+  const durabilityInput = document.getElementById('itemDurabilityInput');
+
+  if (editIndex !== null) {
+    const items = game.settings.getItems();
+    const item = items[editIndex];
+    formTitle.textContent = '아이템 수정';
+    nameInput.value = item.name;
+    attackInput.value = item.attack;
+    durabilityInput.value = item.durability;
+  } else {
+    formTitle.textContent = '새 아이템';
+    nameInput.value = '';
+    attackInput.value = '1';
+    durabilityInput.value = '1';
+  }
+
+  formContainer.style.display = 'block';
+
+  // 저장 버튼
+  const saveBtn = document.getElementById('saveItemBtn');
+  saveBtn.onclick = () => {
+    const name = nameInput.value.trim();
+    const attack = parseInt(attackInput.value);
+    const durability = parseInt(durabilityInput.value);
+
+    if (!name) {
+      alert('아이템 이름을 입력하세요.');
+      return;
+    }
+
+    const newItem = {
+      id: name.toLowerCase().replace(/\s+/g, '_'),
+      name: name,
+      attack: attack,
+      durability: durability
+    };
+
+    if (editIndex !== null) {
+      game.settings.updateItem(editIndex, newItem);
+    } else {
+      game.settings.addItem(newItem);
+    }
+
+    formContainer.style.display = 'none';
+    showSettingsPopup(); // 새로고침
+  };
+
+  // 취소 버튼
+  document.getElementById('cancelItemBtn').onclick = () => {
+    formContainer.style.display = 'none';
+  };
+}
+
+// 아이템 수정
+function editItem(index) {
+  showItemForm(index);
+}
+
+// 아이템 삭제
+function deleteItem(index) {
+  if (confirm('이 아이템을 삭제하시겠습니까?')) {
+    game.settings.removeItem(index);
+    showSettingsPopup(); // 새로고침
+  }
 }
 
 function closePopup() {

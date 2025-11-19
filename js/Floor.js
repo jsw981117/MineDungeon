@@ -1,7 +1,8 @@
 class Floor {
-  constructor(level, board) {
+  constructor(level, board, settings) {
     this.level = level;
     this.board = board;
+    this.settings = settings;
   }
 
   generate() {
@@ -18,8 +19,8 @@ class Floor {
     tiles[tileIndex].setPiece(stairEvent);
     tileIndex++;
 
-    // 2단계: 적 배치 (10개)
-    const enemyCount = 10;
+    // 2단계: 적 배치 (설정값 기반)
+    const enemyCount = this.settings.getEnemyCount();
     for (let i = 0; i < enemyCount; i++) {
       if (tileIndex >= tiles.length) break;
 
@@ -27,8 +28,8 @@ class Floor {
         id: 'monster',
         name: '몬스터',
         type: 'enemy',
-        hp: 10 + (this.level - 1) * 2,  // 층마다 체력 +2
-        attack: 2 + Math.floor((this.level - 1) / 2),  // 2층마다 공격력 +1
+        hp: this.settings.getEnemyBaseHp() + (this.level - 1) * this.settings.getHpPerFloor(),
+        attack: 2 + Math.floor((this.level - 1) / this.settings.getAttackPerFloors()),
         description: '기본 몬스터'
       };
 
@@ -37,14 +38,17 @@ class Floor {
       tileIndex++;
     }
 
-    // 3단계: 아이템 배치 (3-5개 랜덤)
-    const itemCount = 3 + Math.floor(Math.random() * 3); // 3-5개
+    // 3단계: 아이템 배치 (설정값 기반)
+    const itemCount = this.settings.getItemCount();
+    const itemPool = this.settings.getItems();
+
     for (let i = 0; i < itemCount; i++) {
       if (tileIndex >= tiles.length) break;
+      if (itemPool.length === 0) break;
 
       // 랜덤 아이템 선택
-      const randomItemData = ITEMS_DATA[Math.floor(Math.random() * ITEMS_DATA.length)];
-      const item = new Item({...randomItemData});
+      const randomItemData = itemPool[Math.floor(Math.random() * itemPool.length)];
+      const item = new Item({...randomItemData, type: 'item'});
       tiles[tileIndex].setPiece(item);
       tileIndex++;
     }

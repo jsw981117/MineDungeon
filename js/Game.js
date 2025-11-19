@@ -1,27 +1,45 @@
 class Game {
   constructor() {
-    this.player = new Player();
-    this.board = new Board(9, 9); // 고정 9x9
-    this.currentFloor = 1;
-    this.uiManager = null;
     this.settings = new Settings();
+    this.init();
   }
 
-  init(canvas) {
+  init() {
+    this.player = new Player();
+    const boardSize = this.settings.getBoardSize();
+    this.board = new Board(boardSize, boardSize);
+    this.currentFloor = 1;
+    this.uiManager = null;
+  }
+
+  initCanvas(canvas) {
     this.uiManager = new UIManager(canvas, this);
     this.startFloor();
   }
 
   startFloor() {
-    const floor = new Floor(this.currentFloor, this.board);
+    const floor = new Floor(this.currentFloor, this.board, this.settings);
     floor.generate();
-    this.uiManager.updateStats();
-    this.uiManager.render();
+    if (this.uiManager) {
+      this.uiManager.updateStats();
+      this.uiManager.render();
+    }
   }
 
   nextFloor() {
     this.currentFloor++;
     this.startFloor();
+  }
+
+  restart() {
+    this.init();
+    if (this.uiManager) {
+      const boardSize = this.settings.getBoardSize();
+      this.board = new Board(boardSize, boardSize);
+      this.uiManager.resetZoomAndPan();
+      this.uiManager.setupCanvas();
+      this.startFloor();
+    }
   }
 
   onTileClick(x, y) {
