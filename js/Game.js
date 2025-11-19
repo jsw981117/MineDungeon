@@ -224,6 +224,10 @@ class Game {
     // 블럭이 있을 때만 깃발 토글 가능
     if (tile.hasBlock()) {
       tile.block.toggleFlag();
+      // 깃발 토글 시 진동 피드백
+      if (this.uiManager) {
+        this.uiManager.triggerVibration();
+      }
     }
   }
 

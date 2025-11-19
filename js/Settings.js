@@ -5,6 +5,8 @@ class Settings {
     this.buttonScale = parseFloat(localStorage.getItem('buttonScale')) || 1;
     this.orientation = localStorage.getItem('orientation') || 'portrait';
     this.holdDuration = parseFloat(localStorage.getItem('holdDuration')) || 0.6;
+    this.vibrationEnabled = localStorage.getItem('vibrationEnabled') !== 'false'; // 기본값: true
+    this.vibrationIntensity = parseInt(localStorage.getItem('vibrationIntensity')) || 2; // 0-3, 기본값: 2 (보통)
 
     // 게임 설정
     this.loadGameSettings();
@@ -201,5 +203,30 @@ class Settings {
 
   getPlayerAttack() {
     return this.playerAttack;
+  }
+
+  // 진동 설정
+  setVibrationEnabled(value) {
+    this.vibrationEnabled = value;
+    localStorage.setItem('vibrationEnabled', value);
+  }
+
+  getVibrationEnabled() {
+    return this.vibrationEnabled;
+  }
+
+  setVibrationIntensity(value) {
+    this.vibrationIntensity = Math.max(0, Math.min(3, value));
+    localStorage.setItem('vibrationIntensity', this.vibrationIntensity);
+  }
+
+  getVibrationIntensity() {
+    return this.vibrationIntensity;
+  }
+
+  getVibrationDuration() {
+    // 0: 꺼짐, 1: 약함(20ms), 2: 보통(50ms), 3: 강함(100ms)
+    const durations = [0, 20, 50, 100];
+    return durations[this.vibrationIntensity];
   }
 }

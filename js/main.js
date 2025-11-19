@@ -74,6 +74,8 @@ function showSettingsPopup() {
   const buttonScale = game.settings.getButtonScale();
   const orientation = game.settings.getOrientation();
   const holdDuration = game.settings.getHoldDuration();
+  const vibrationEnabled = game.settings.getVibrationEnabled();
+  const vibrationIntensity = game.settings.getVibrationIntensity();
 
   const boardSize = game.settings.getBoardSize();
   const enemyCount = game.settings.getEnemyCount();
@@ -102,7 +104,12 @@ function showSettingsPopup() {
         <input type="range" id="textScaleSlider" min="0.5" max="2" step="0.1" value="${textScale}"><br><br>
 
         <label>버튼 크기: <span id="buttonScaleValue">${buttonScale.toFixed(1)}</span></label><br>
-        <input type="range" id="buttonScaleSlider" min="0.5" max="2" step="0.1" value="${buttonScale}">
+        <input type="range" id="buttonScaleSlider" min="0.5" max="2" step="0.1" value="${buttonScale}"><br><br>
+
+        <label><input type="checkbox" id="vibrationEnabledCheckbox" ${vibrationEnabled ? 'checked' : ''}> 진동 피드백 (깃발 표시 시)</label><br><br>
+
+        <label>진동 세기: <span id="vibrationIntensityValue">${['꺼짐', '약함', '보통', '강함'][vibrationIntensity]}</span></label><br>
+        <input type="range" id="vibrationIntensitySlider" min="0" max="3" step="1" value="${vibrationIntensity}" ${!vibrationEnabled ? 'disabled' : ''}>
       </div>
 
       <hr style="margin: 20px 0;">
@@ -177,6 +184,21 @@ function showSettingsPopup() {
     const value = parseFloat(e.target.value);
     game.settings.setButtonScale(value);
     document.getElementById('buttonScaleValue').textContent = value.toFixed(1);
+  });
+
+  // 진동 설정 이벤트
+  document.getElementById('vibrationEnabledCheckbox').addEventListener('change', (e) => {
+    const enabled = e.target.checked;
+    game.settings.setVibrationEnabled(enabled);
+    const intensitySlider = document.getElementById('vibrationIntensitySlider');
+    intensitySlider.disabled = !enabled;
+  });
+
+  document.getElementById('vibrationIntensitySlider').addEventListener('input', (e) => {
+    const value = parseInt(e.target.value);
+    game.settings.setVibrationIntensity(value);
+    const labels = ['꺼짐', '약함', '보통', '강함'];
+    document.getElementById('vibrationIntensityValue').textContent = labels[value];
   });
 
   // 게임 설정 이벤트

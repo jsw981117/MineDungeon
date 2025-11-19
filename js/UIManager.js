@@ -18,6 +18,7 @@ class UIManager {
     // 터치 관련
     this.touchStartDist = 0;
     this.touchStartScale = 1.0;
+    this.touchStartMidpoint = null; // 핀치 시작 시 두 손가락의 중심점
 
     this.holdTimer = null;
     this.holdStartPos = null;
@@ -33,6 +34,18 @@ class UIManager {
     this.scale = 1.0;
     this.panX = 0;
     this.panY = 0;
+  }
+
+  triggerVibration() {
+    // 진동 설정 확인
+    if (!this.game.settings.getVibrationEnabled()) {
+      return;
+    }
+
+    const duration = this.game.settings.getVibrationDuration();
+    if (duration > 0 && navigator.vibrate) {
+      navigator.vibrate(duration);
+    }
   }
 
   setupCanvas() {
@@ -98,9 +111,10 @@ class UIManager {
     this.canvas.addEventListener('touchstart', (e) => {
       e.preventDefault();
       if (e.touches.length === 2) {
-        // 핀치 시작
+        // 핀치 시작 - 거리와 중심점 저장
         this.touchStartDist = this.getTouchDistance(e.touches);
         this.touchStartScale = this.scale;
+        this.touchStartMidpoint = this.getTouchMidpoint(e.touches);
       } else if (e.touches.length === 1) {
         const touch = e.touches[0];
         this.handlePointerDown(e, touch.clientX, touch.clientY);
@@ -110,10 +124,21 @@ class UIManager {
     this.canvas.addEventListener('touchmove', (e) => {
       e.preventDefault();
       if (e.touches.length === 2) {
-        // 핀치 줌
+        // 핀치 줌 - 중심점 기준으로 줌
         const dist = this.getTouchDistance(e.touches);
         const scaleChange = dist / this.touchStartDist;
-        this.scale = Math.max(0.5, Math.min(3.0, this.touchStartScale * scaleChange));
+
+        // 저장된 중심점을 기준으로 zoom 호출
+        if (this.touchStartMidpoint) {
+          const newScale = Math.max(0.5, Math.min(3.0, this.touchStartScale * scaleChange));
+          const oldScale = this.scale;
+          this.scale = newScale;
+
+          // 중심점 기준으로 팬 조정
+          const scaleRatio = this.scale / oldScale;
+          this.panX = this.touchStartMidpoint.x - (this.touchStartMidpoint.x - this.panX) * scaleRatio;
+          this.panY = this.touchStartMidpoint.y - (this.touchStartMidpoint.y - this.panY) * scaleRatio;
+        }
         this.render();
       } else if (e.touches.length === 1) {
         const touch = e.touches[0];
@@ -125,6 +150,7 @@ class UIManager {
       e.preventDefault();
       if (e.touches.length < 2) {
         this.touchStartDist = 0;
+        this.touchStartMidpoint = null;
       }
       if (e.changedTouches.length > 0) {
         const touch = e.changedTouches[0];
@@ -142,6 +168,13 @@ class UIManager {
     const dx = touches[0].clientX - touches[1].clientX;
     const dy = touches[0].clientY - touches[1].clientY;
     return Math.sqrt(dx * dx + dy * dy);
+  }
+
+  getTouchMidpoint(touches) {
+    return {
+      x: (touches[0].clientX + touches[1].clientX) / 2,
+      y: (touches[0].clientY + touches[1].clientY) / 2
+    };
   }
 
   zoom(scaleChange, mouseX, mouseY) {
