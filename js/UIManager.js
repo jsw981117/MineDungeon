@@ -111,7 +111,12 @@ class UIManager {
     this.canvas.addEventListener('touchstart', (e) => {
       e.preventDefault();
       if (e.touches.length === 2) {
-        // 핀치 시작 - 거리와 중심점 저장
+        // 핀치 시작 - 롱프레스 타이머 취소
+        if (this.holdTimer) {
+          clearTimeout(this.holdTimer);
+          this.holdTimer = null;
+        }
+        // 거리와 중심점 저장
         this.touchStartDist = this.getTouchDistance(e.touches);
         this.touchStartScale = this.scale;
         this.touchStartMidpoint = this.getTouchMidpoint(e.touches);
@@ -124,6 +129,11 @@ class UIManager {
     this.canvas.addEventListener('touchmove', (e) => {
       e.preventDefault();
       if (e.touches.length === 2) {
+        // 핀치 줌 - 롱프레스 타이머 취소
+        if (this.holdTimer) {
+          clearTimeout(this.holdTimer);
+          this.holdTimer = null;
+        }
         // 핀치 줌 - 중심점 기준으로 줌
         const dist = this.getTouchDistance(e.touches);
         const scaleChange = dist / this.touchStartDist;
@@ -192,8 +202,9 @@ class UIManager {
     const canvasX = clientX - rect.left;
     const canvasY = clientY - rect.top;
 
-    // 인벤토리 영역 체크
-    if (canvasY >= this.canvas.height - this.inventoryHeight) {
+    // 인벤토리 영역 체크 (모바일 safe area 고려)
+    const bottomSafeArea = 30;
+    if (canvasY >= this.canvas.height - this.inventoryHeight - bottomSafeArea) {
       return null;
     }
 
@@ -214,8 +225,9 @@ class UIManager {
     const canvasX = clientX - rect.left;
     const canvasY = clientY - rect.top;
 
-    // 인벤토리 클릭 체크
-    if (canvasY >= this.canvas.height - this.inventoryHeight) {
+    // 인벤토리 클릭 체크 (모바일 safe area 고려)
+    const bottomSafeArea = 30;
+    if (canvasY >= this.canvas.height - this.inventoryHeight - bottomSafeArea) {
       const slotIndex = this.getInventorySlotIndex(canvasX, canvasY);
       if (slotIndex !== -1) {
         this.game.onInventoryClick(slotIndex);
@@ -311,7 +323,10 @@ class UIManager {
     const slotMargin = this.inventoryHeight * 0.1;
     const totalWidth = slotSize * 4 + slotMargin * 5;
     const startX = (this.canvas.width - totalWidth) / 2;
-    const startY = this.canvas.height - this.inventoryHeight + slotMargin;
+
+    // 모바일 브라우저 하단 UI를 위한 추가 여백
+    const bottomSafeArea = 30;
+    const startY = this.canvas.height - this.inventoryHeight + slotMargin - bottomSafeArea;
 
     for (let i = 0; i < 4; i++) {
       const slotX = startX + i * (slotSize + slotMargin) + slotMargin;
@@ -441,10 +456,13 @@ class UIManager {
     const slotMargin = this.inventoryHeight * 0.1;
     const totalWidth = slotSize * 4 + slotMargin * 5;
     const startX = (this.canvas.width - totalWidth) / 2;
-    const startY = this.canvas.height - this.inventoryHeight + slotMargin;
+
+    // 모바일 브라우저 하단 UI를 위한 추가 여백
+    const bottomSafeArea = 30;
+    const startY = this.canvas.height - this.inventoryHeight + slotMargin - bottomSafeArea;
 
     this.ctx.fillStyle = '#333';
-    this.ctx.fillRect(0, this.canvas.height - this.inventoryHeight, this.canvas.width, this.inventoryHeight);
+    this.ctx.fillRect(0, this.canvas.height - this.inventoryHeight - bottomSafeArea, this.canvas.width, this.inventoryHeight);
 
     for (let i = 0; i < 4; i++) {
       const x = startX + i * (slotSize + slotMargin) + slotMargin;
