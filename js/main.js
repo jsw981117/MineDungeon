@@ -324,3 +324,4 @@ function closePopup() {
     popup.classList.remove('active');
   }
 }
+/* Force rebuild Wed Nov 19 14:27:15 UTC 2025 */
