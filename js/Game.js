@@ -1,59 +1,19 @@
 class Game {
   constructor() {
     this.player = new Player();
-    this.board = new Board(6, 6); // 초기 6x6
-    this.deck = new Deck();
+    this.board = new Board(9, 9); // 고정 9x9
     this.currentFloor = 1;
     this.uiManager = null;
     this.settings = new Settings();
-    this.isFloorClear = false; // 층 완료 플래그
   }
 
   init(canvas) {
     this.uiManager = new UIManager(canvas, this);
-    this.initDeck();
     this.startFloor();
   }
 
-  initDeck() {
-    // 첫 시작: 몬스터 3마리, 아이템 3개 랜덤 선택
-
-    // 몬스터 3마리 랜덤 선택
-    if (typeof ENEMIES_DATA !== 'undefined' && ENEMIES_DATA.length > 0) {
-      const shuffledEnemies = [...ENEMIES_DATA].sort(() => Math.random() - 0.5);
-      const selectedEnemies = shuffledEnemies.slice(0, 3);
-      selectedEnemies.forEach(data => {
-        this.deck.addEnemy(new Enemy(data));
-      });
-    }
-
-    // 아이템 3개 랜덤 선택
-    if (typeof ITEMS_DATA !== 'undefined' && ITEMS_DATA.length > 0) {
-      const shuffledItems = [...ITEMS_DATA].sort(() => Math.random() - 0.5);
-      const selectedItems = shuffledItems.slice(0, 3);
-      selectedItems.forEach(data => {
-        this.deck.addItem(new Item(data));
-      });
-    }
-  }
-
   startFloor() {
-    // 보드 크기 조정 (5층부터 7x7, 10층부터 8x8)
-    let boardSize = 6;
-    if (this.currentFloor >= 10) {
-      boardSize = 8;
-    } else if (this.currentFloor >= 5) {
-      boardSize = 7;
-    }
-
-    // 보드 크기가 변경되면 보드 재생성
-    if (this.board.width !== boardSize || this.board.height !== boardSize) {
-      this.board = new Board(boardSize, boardSize);
-      this.uiManager.setupCanvas(); // 캔버스 크기도 재조정
-    }
-
-    // 덱을 직접 사용 (복사하지 않음 - 아이템 이월을 위해)
-    const floor = new Floor(this.currentFloor, this.board, this.deck);
+    const floor = new Floor(this.currentFloor, this.board);
     floor.generate();
     this.uiManager.updateStats();
     this.uiManager.render();
@@ -61,8 +21,6 @@ class Game {
 
   nextFloor() {
     this.currentFloor++;
-    // 층 단위 버프 초기화
-    this.player.clearFloorBuffs();
     this.startFloor();
   }
 
@@ -74,9 +32,6 @@ class Game {
     if (tile.hasBlock()) {
       // 깃발이 표시된 블록은 클릭 무시
       if (tile.block.isFlagged()) return;
-
-      // 플레이어 행동: 블록 열기 (독 효과 발동)
-      this.player.onPlayerAction();
 
       tile.removeBlock();
       tile.explored = true;
@@ -92,36 +47,27 @@ class Game {
             this.gameOver();
             return;
           }
-          // 기습 후에는 적이 남아있음 (플레이어가 다시 클릭해야 공격)
-          // 적 블록 클릭 시에는 자동 탐색 체크 안 함
+        } else if (piece.type === 'event') {
+          // 이벤트 (계단)
+          if (piece.id === 'stair') {
+            this.nextFloor();
+            return;
+          }
         } else {
-          // 아이템/이벤트 블록 제거 (공개만 됨)
-          // 비-적 블록 탐색 시 자동 탐색 체크
+          // 비-적 블록 탐색 시 자동 소탕 체크
           this.checkEnemyWipeout();
         }
 
         this.uiManager.updateStats();
         this.uiManager.render();
-
-        // 독으로 사망 체크
-        if (this.player.isDead()) {
-          this.gameOver();
-          return;
-        }
       } else {
         // 빈칸 - 연쇄 탐색
         if (tile.adjacentEnemies === 0) {
           this.floodFill(x, y);
         }
-        // 빈 블록 탐색 시 자동 탐색 체크
+        // 빈 블록 탐색 시 자동 소탕 체크
         this.checkEnemyWipeout();
         this.uiManager.render();
-
-        // 독으로 사망 체크
-        if (this.player.isDead()) {
-          this.gameOver();
-          return;
-        }
       }
       return;
     }
@@ -131,22 +77,17 @@ class Game {
       const piece = tile.piece;
       let shouldRemove = false;
 
-      // 플레이어 행동: 공격 또는 아이템 사용 (독 효과 발동)
-      this.player.onPlayerAction();
-
       // 적이면 플레이어 선공
       if (piece.type === 'enemy') {
         shouldRemove = piece.playerAttack(this.player, this, tile);
-
-        // 레벨업 체크
-        if (this.player.exp >= this.player.expToNext) {
-          const leveledUp = this.player.levelUp();
-          if (leveledUp) {
-            this.showLevelUpReward();
-          }
+      } else if (piece.type === 'event') {
+        // 이벤트 (계단)
+        if (piece.id === 'stair') {
+          this.nextFloor();
+          return;
         }
       } else {
-        // 아이템/이벤트는 일반 상호작용
+        // 아이템은 일반 상호작용
         shouldRemove = piece.interact(this.player, this, tile);
       }
 
@@ -188,40 +129,19 @@ class Game {
         tile.explored = true;
       });
 
-      console.log(`모든 적 발견! 적들이 ${this.player.attack} 피해를 입습니다.`);
+      console.log(`모든 적 발견! 적들이 ${this.player.getAttack()} 피해를 입습니다.`);
 
       // 각 적에게 플레이어 공격력만큼 피해 적용
       let totalKills = 0;
       blockedTiles.forEach(tile => {
         if (tile.hasPiece() && tile.piece.type === 'enemy') {
           const enemy = tile.piece;
-          enemy.hp -= this.player.attack;
+          enemy.hp -= this.player.getAttack();
 
           // 적 사망 처리
           if (enemy.hp <= 0) {
             console.log(`${enemy.name} 처치!`);
-
-            // 사망 효과 발동
-            if (enemy.effect) {
-              EffectHandler.apply(enemy.effect, enemy, {
-                player: this.player,
-                game: this,
-                tile: tile,
-                event: 'on_death'
-              });
-            }
-
-            // 경험치 및 골드 획득
-            this.player.gainExp(1);
-            this.player.gold += 5; // 고정 5골드
             totalKills++;
-
-            // 내구도 감소
-            enemy.durability--;
-            if (enemy.durability <= 0) {
-              this.deck.removeEnemy(enemy);
-              console.log(`${enemy.name}이(가) 덱에서 제거되었습니다!`);
-            }
 
             // 타일에서 제거
             tile.removePiece();
@@ -231,14 +151,6 @@ class Game {
           }
         }
       });
-
-      // 레벨업 체크
-      if (this.player.exp >= this.player.expToNext) {
-        const leveledUp = this.player.levelUp();
-        if (leveledUp) {
-          this.showLevelUpReward();
-        }
-      }
 
       this.uiManager.updateStats();
       this.uiManager.render();
@@ -297,6 +209,12 @@ class Game {
     }
   }
 
+  // 인벤토리 슬롯 클릭 핸들러
+  onInventoryClick(slotIndex) {
+    this.player.equipItem(slotIndex);
+    this.uiManager.render();
+  }
+
   gameOver() {
     this.showMessage('Game Over!');
     setTimeout(() => {
@@ -323,67 +241,5 @@ class Game {
     setTimeout(() => {
       message.remove();
     }, duration);
-  }
-
-  showEventChoices(event) {
-    showEventChoicesPopup(event);
-  }
-
-  showShop() {
-    showShopPopup();
-  }
-
-  showLevelUpReward() {
-    // 능력치 증가 선택지 생성 (3개 무작위)
-    const statOptions = [
-      { stat: 'hp', text: 'HP +20', value: 20 },
-      { stat: 'mp', text: 'MP +10', value: 10 },
-      { stat: 'attack', text: '공격력 +3', value: 3 },
-      { stat: 'magic', text: '마법력 +3', value: 3 },
-      { stat: 'defense', text: '방어력 +2', value: 2 },
-      { stat: 'critRate', text: '치명타율 +5%', value: 5 },
-      { stat: 'critDamage', text: '치명타 피해 +15%', value: 15 },
-      { stat: 'evasion', text: '회피율 +5%', value: 5 }
-    ];
-
-    // 무작위로 3개 선택
-    const shuffled = [...statOptions].sort(() => Math.random() - 0.5);
-    const choices = shuffled.slice(0, 3);
-
-    showStatRewardPopup(choices);
-  }
-
-  showItemReward(hasCallback = false) {
-    // 아이템/아티팩트 선택지 생성 (3개 무작위)
-    const choices = [];
-
-    // 아이템 2개, 아티팩트 1개
-    if (typeof ITEMS_DATA !== 'undefined') {
-      const shuffledItems = [...ITEMS_DATA].sort(() => Math.random() - 0.5);
-      shuffledItems.slice(0, 2).forEach(itemData => {
-        choices.push({ ...itemData, type: 'item' });
-      });
-    }
-
-    if (typeof ARTIFACTS_DATA !== 'undefined') {
-      const shuffledArtifacts = [...ARTIFACTS_DATA].sort(() => Math.random() - 0.5);
-      shuffledArtifacts.slice(0, 1).forEach(artifactData => {
-        choices.push({ ...artifactData, type: 'artifact' });
-      });
-    }
-
-    showItemRewardPopup(choices, hasCallback);
-  }
-
-  showEnemyAddReward() {
-    // 적 선택지 생성 (3개 무작위)
-    if (typeof ENEMIES_DATA === 'undefined' || ENEMIES_DATA.length === 0) {
-      return;
-    }
-
-    const shuffled = [...ENEMIES_DATA].sort(() => Math.random() - 0.5);
-    const choices = shuffled.slice(0, Math.min(3, ENEMIES_DATA.length));
-
-    showEnemyRewardPopup(choices);
   }
 }

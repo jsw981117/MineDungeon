@@ -3,47 +3,29 @@ class Player {
     // 기본 능력치
     this.hp = 100;
     this.maxHp = 100;
-    this.mp = 50;
-    this.maxMp = 50;
+    this.attack = 1;  // 기본 공격력 1
 
-    // 공격 능력치
-    this.attack = 10;
-    this.magic = 5;
-
-    // 방어 능력치
-    this.defense = 5;
-
-    // 전투 능력치
-    this.critRate = 5;        // 치명타 확률 (%)
-    this.critDamage = 150;     // 치명타 피해량 (%)
-    this.evasion = 0;          // 회피율 (%)
-
-    // 성장 시스템
-    this.level = 1;
-    this.exp = 0;
-    this.expToNext = 3;
-
-    // 골드
-    this.gold = 50;
-
-    // 인벤토리
-    this.inventory = [];
-    this.artifacts = [];
-
-    // 영구/일시 능력치 구분
-    this.permanentStats = {};
-    this.temporaryStats = {};
-
-    // 상태 효과 (키워드)
-    this.statusEffects = {}; // { poison: 3, burn: 2, freeze: true }
-
-    // 층 단위 임시 버프
-    this.floorBuffs = []; // [{ stat: 'attack', value: 2 }, ...]
+    // 인벤토리 (4칸)
+    this.inventory = [null, null, null, null];
+    this.equippedSlot = null; // 현재 장착 중인 슬롯 인덱스 (0-3, null이면 미장착)
   }
 
   takeDamage(amount) {
-    // CombatCalculator에서 이미 방어력을 계산했으므로 그대로 적용
-    this.hp = Math.max(0, this.hp - amount);
+    // 아이템이 장착되어 있으면 내구도가 먼저 깎임
+    if (this.equippedSlot !== null && this.inventory[this.equippedSlot]) {
+      const equippedItem = this.inventory[this.equippedSlot];
+      equippedItem.durability -= amount;
+
+      if (equippedItem.durability <= 0) {
+        // 아이템 파괴
+        console.log(`${equippedItem.name}이(가) 파괴되었습니다!`);
+        this.inventory[this.equippedSlot] = null;
+        this.equippedSlot = null;
+      }
+    } else {
+      // 아이템 미장착 시 체력이 깎임
+      this.hp = Math.max(0, this.hp - amount);
+    }
   }
 
   heal(amount) {
@@ -51,26 +33,34 @@ class Player {
   }
 
   addItem(item) {
-    this.inventory.push(item);
-  }
-
-  removeItem(item) {
-    const index = this.inventory.indexOf(item);
-    if (index > -1) {
-      this.inventory.splice(index, 1);
+    // 빈 슬롯에 아이템 추가
+    for (let i = 0; i < this.inventory.length; i++) {
+      if (this.inventory[i] === null) {
+        this.inventory[i] = item;
+        return true;
+      }
     }
+    return false; // 인벤토리 풀
   }
 
-  addArtifact(artifact, game = null) {
-    this.artifacts.push(artifact);
-    // 아티팩트 효과 즉시 적용
-    if (game) {
-      artifact.apply(this, game);
+  equipItem(slotIndex) {
+    if (slotIndex >= 0 && slotIndex < this.inventory.length && this.inventory[slotIndex]) {
+      // 이미 장착된 슬롯을 다시 클릭하면 해제
+      if (this.equippedSlot === slotIndex) {
+        this.equippedSlot = null;
+      } else {
+        this.equippedSlot = slotIndex;
+      }
     }
   }
 
   getAttack() {
-    return this.attack;
+    let totalAttack = this.attack;
+    // 장착된 아이템의 공격력 추가
+    if (this.equippedSlot !== null && this.inventory[this.equippedSlot]) {
+      totalAttack += this.inventory[this.equippedSlot].attack;
+    }
+    return totalAttack;
   }
 
   getHp() {
@@ -83,165 +73,5 @@ class Player {
 
   isDead() {
     return this.hp <= 0;
-  }
-
-  // MP 관리
-  useMp(amount) {
-    if (this.mp >= amount) {
-      this.mp -= amount;
-      return true;
-    }
-    return false;
-  }
-
-  restoreMp(amount) {
-    this.mp = Math.min(this.maxMp, this.mp + amount);
-  }
-
-  // 경험치 & 레벨업
-  gainExp(amount) {
-    this.exp += amount;
-    if (this.exp >= this.expToNext) {
-      return this.levelUp();
-    }
-    return false;
-  }
-
-  levelUp() {
-    if (this.exp >= this.expToNext) {
-      this.level++;
-      this.exp = 0; // 경험치 리셋
-      this.expToNext = 3 + (this.level - 1); // 3, 4, 5, 6...
-      return true;
-    }
-    return false;
-  }
-
-  // 영구 능력치 증가
-  increasePermanent(stat, amount) {
-    if (this.hasOwnProperty(stat)) {
-      this[stat] += amount;
-      this.permanentStats[stat] = (this.permanentStats[stat] || 0) + amount;
-    }
-  }
-
-  // 일시 능력치 적용 (추후 턴 시스템과 연동)
-  applyTemporary(stat, amount, duration) {
-    if (!this.temporaryStats[stat]) {
-      this.temporaryStats[stat] = [];
-    }
-    this.temporaryStats[stat].push({ amount, duration });
-    if (this.hasOwnProperty(stat)) {
-      this[stat] += amount;
-    }
-  }
-
-  // Getter 메서드
-  getMp() {
-    return this.mp;
-  }
-
-  getMaxMp() {
-    return this.maxMp;
-  }
-
-  getLevel() {
-    return this.level;
-  }
-
-  getExp() {
-    return this.exp;
-  }
-
-  getExpToNext() {
-    return this.expToNext;
-  }
-
-  // 상태 효과 관리
-  addStatusEffect(keyword, value = 1) {
-    if (KEYWORDS_DATA[keyword].stackable && KEYWORDS_DATA[keyword].hasValue) {
-      // 중첩 가능하고 값이 있는 경우 (독, 화상)
-      this.statusEffects[keyword] = (this.statusEffects[keyword] || 0) + value;
-    } else {
-      // 중첩 불가능한 경우 (빙결)
-      this.statusEffects[keyword] = true;
-    }
-  }
-
-  removeStatusEffect(keyword) {
-    delete this.statusEffects[keyword];
-  }
-
-  hasStatusEffect(keyword) {
-    return !!this.statusEffects[keyword];
-  }
-
-  getStatusEffect(keyword) {
-    return this.statusEffects[keyword];
-  }
-
-  decreaseStatusEffect(keyword, amount = 1) {
-    if (this.statusEffects[keyword]) {
-      if (typeof this.statusEffects[keyword] === 'number') {
-        this.statusEffects[keyword] -= amount;
-        if (this.statusEffects[keyword] <= 0) {
-          delete this.statusEffects[keyword];
-        }
-      }
-    }
-  }
-
-  // 층 단위 임시 버프
-  applyFloorBuff(stat, value) {
-    this[stat] += value;
-    this.floorBuffs.push({ stat, value });
-  }
-
-  clearFloorBuffs() {
-    this.floorBuffs.forEach(buff => {
-      this[buff.stat] -= buff.value;
-    });
-    this.floorBuffs = [];
-  }
-
-  // 플레이어 행동 시 호출 (독 효과 처리)
-  onPlayerAction() {
-    if (this.hasStatusEffect('poison')) {
-      const poisonDamage = this.getStatusEffect('poison');
-      this.hp = Math.max(0, this.hp - poisonDamage);
-      console.log(`독 피해! ${poisonDamage} 피해를 입었습니다.`);
-      this.decreaseStatusEffect('poison', 1);
-
-      if (this.hasStatusEffect('poison')) {
-        console.log(`독 ${this.getStatusEffect('poison')} 남음`);
-      } else {
-        console.log('독이 사라졌습니다.');
-      }
-    }
-  }
-
-  // 피해를 받을 때 호출 (화상 효과 처리)
-  takeDamageWithEffects(amount) {
-    let totalDamage = amount;
-
-    // 화상 효과: 피해 받을 때 추가 피해
-    if (this.hasStatusEffect('burn')) {
-      const burnDamage = this.getStatusEffect('burn');
-      totalDamage += burnDamage;
-      console.log(`화상 피해! ${burnDamage} 추가 피해!`);
-
-      // 화상 수치 절반으로 감소 (반내림)
-      const newBurnValue = Math.floor(burnDamage / 2);
-      if (newBurnValue > 0) {
-        this.statusEffects['burn'] = newBurnValue;
-        console.log(`화상 ${newBurnValue} 남음`);
-      } else {
-        this.removeStatusEffect('burn');
-        console.log('화상이 사라졌습니다.');
-      }
-    }
-
-    // 실제 피해 적용
-    this.takeDamage(totalDamage);
   }
 }

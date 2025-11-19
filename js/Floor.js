@@ -1,62 +1,55 @@
 class Floor {
-  constructor(level, board, deck) {
+  constructor(level, board) {
     this.level = level;
     this.board = board;
-    this.deck = deck;
-    this.minEmptyRatio = 0.15; // 최소 15% 빈칸
   }
 
   generate() {
     this.board.reset();
-    this.deck.shuffle();
 
     const tiles = this.board.getTiles();
     shuffleArray(tiles);
 
-    const totalTiles = tiles.length;
-    const minEmptyTiles = Math.ceil(totalTiles * this.minEmptyRatio);
     let tileIndex = 0;
 
-    // 1단계: 이벤트 배치 (계단 필수)
-    if (EVENTS_DATA && EVENTS_DATA.length > 0) {
-      const stairEvent = new Event(EVENTS_DATA[0]);
-      tiles[tileIndex].setPiece(stairEvent);
-      tileIndex++;
-    }
+    // 1단계: 계단 배치 (1개)
+    const stairData = { id: 'stair', name: '계단', type: 'event', description: '다음 층으로' };
+    const stairEvent = new Event(stairData);
+    tiles[tileIndex].setPiece(stairEvent);
+    tileIndex++;
 
-    // 2단계: 적 배치 (durability > 0, 최대 수 제한)
-    const maxEnemies = Math.min(5 + this.level, 20);
-    const availableEnemies = this.deck.getAllEnemies().filter(e => e.durability > 0);
-    const enemiesToPlace = availableEnemies.slice(0, Math.min(maxEnemies, totalTiles - tileIndex - minEmptyTiles));
+    // 2단계: 적 배치 (10개)
+    const enemyCount = 10;
+    for (let i = 0; i < enemyCount; i++) {
+      if (tileIndex >= tiles.length) break;
 
-    for (const enemy of enemiesToPlace) {
-      if (tileIndex >= totalTiles) break;
+      const enemyData = {
+        id: 'monster',
+        name: '몬스터',
+        type: 'enemy',
+        hp: 10 + (this.level - 1) * 2,  // 층마다 체력 +2
+        attack: 2 + Math.floor((this.level - 1) / 2),  // 2층마다 공격력 +1
+        description: '기본 몬스터'
+      };
 
-      // HP 스케일링 (baseHp + (level-1) * 5)
-      enemy.maxHp = enemy.baseHp + (this.level - 1) * 5;
-      enemy.hp = enemy.maxHp;
-
-      // 적 인스턴스 직접 사용 (덱에서 제거하지 않음)
+      const enemy = new Enemy(enemyData);
       tiles[tileIndex].setPiece(enemy);
       tileIndex++;
     }
 
-    // 3단계: 아이템 배치 (durability > 0, 남은 공간에서 최소 빈칸 제외)
-    const remainingTiles = totalTiles - tileIndex;
-    const maxItemSlots = Math.max(0, remainingTiles - minEmptyTiles);
+    // 3단계: 아이템 배치 (3-5개 랜덤)
+    const itemCount = 3 + Math.floor(Math.random() * 3); // 3-5개
+    for (let i = 0; i < itemCount; i++) {
+      if (tileIndex >= tiles.length) break;
 
-    const availableItems = this.deck.getAllItems().filter(i => i.durability > 0);
-    const itemsToPlace = availableItems.slice(0, Math.min(maxItemSlots, availableItems.length));
-
-    for (const item of itemsToPlace) {
-      if (tileIndex >= totalTiles) break;
-      // 아이템 인스턴스 직접 사용 (덱에서 제거하지 않음)
+      // 랜덤 아이템 선택
+      const randomItemData = ITEMS_DATA[Math.floor(Math.random() * ITEMS_DATA.length)];
+      const item = new Item({...randomItemData});
       tiles[tileIndex].setPiece(item);
       tileIndex++;
     }
 
-    // 남은 타일은 빈칸으로 유지됨 (piece 없음)
-    console.log(`Floor ${this.level} 생성: 이벤트 1, 적 ${enemiesToPlace.length}/${availableEnemies.length} (최대 ${maxEnemies}), 아이템 ${itemsToPlace.length}/${availableItems.length}, 빈칸 ${totalTiles - tileIndex}`);
+    console.log(`Floor ${this.level} 생성: 계단 1, 적 ${enemyCount}, 아이템 ${itemCount}, 빈칸 ${tiles.length - tileIndex}`);
 
     // 4단계: 주변 적 개수 계산
     this.board.calculateAllAdjacentEnemies();

@@ -8,10 +8,9 @@ class UIManager {
     this.offsetY = 0;
     this.holdTimer = null;
     this.holdStartPos = null;
-    this.hoverTile = null; // 현재 hover 중인 타일
-    this.hoverPiece = null; // 현재 hover 중인 피스
-    this.effectRangeTiles = []; // 효과 범위 타일들
+    this.hoverTile = null;
     this.tooltipVisible = false;
+    this.inventoryHeight = 0; // 인벤토리 UI 높이
     this.setupCanvas();
     this.setupEvents();
   }
@@ -20,14 +19,24 @@ class UIManager {
     const container = this.canvas.parentElement;
     const containerWidth = container.clientWidth;
     const containerHeight = container.clientHeight;
-    const boardSize = Math.min(containerWidth, containerHeight) * 0.9;
 
-    this.canvas.width = boardSize;
-    this.canvas.height = boardSize;
+    // 인벤토리 공간 확보 (하단 15%)
+    const inventoryRatio = 0.15;
+    this.inventoryHeight = containerHeight * inventoryRatio;
+    const boardHeight = containerHeight * (1 - inventoryRatio);
+
+    const boardSize = Math.min(containerWidth, boardHeight) * 0.9;
+
+    this.canvas.width = containerWidth;
+    this.canvas.height = containerHeight;
 
     // 보드 크기에 따라 동적으로 타일 크기 계산
-    const gridSize = this.game.board ? this.game.board.width : 8;
+    const gridSize = this.game.board ? this.game.board.width : 9;
     this.tileSize = boardSize / gridSize;
+
+    // 보드를 중앙에 배치
+    this.offsetX = (containerWidth - boardSize) / 2;
+    this.offsetY = (boardHeight - boardSize) / 2;
   }
 
   setupEvents() {
@@ -47,12 +56,16 @@ class UIManager {
     this.canvas.addEventListener('contextmenu', (e) => {
       e.preventDefault();
       const rect = this.canvas.getBoundingClientRect();
-      const x = e.clientX - rect.left;
-      const y = e.clientY - rect.top;
-      const tileX = Math.floor(x / this.tileSize);
-      const tileY = Math.floor(y / this.tileSize);
-      this.game.onTileFlag(tileX, tileY);
-      this.render();
+      const x = e.clientX - rect.left - this.offsetX;
+      const y = e.clientY - rect.top - this.offsetY;
+
+      // 보드 영역인지 인벤토리 영역인지 확인
+      if (y >= 0 && y < this.tileSize * this.game.board.height) {
+        const tileX = Math.floor(x / this.tileSize);
+        const tileY = Math.floor(y / this.tileSize);
+        this.game.onTileFlag(tileX, tileY);
+        this.render();
+      }
     });
 
     // 터치 이벤트
@@ -83,8 +96,19 @@ class UIManager {
     if (e.button === 2) return;
 
     const rect = this.canvas.getBoundingClientRect();
-    const x = clientX - rect.left;
-    const y = clientY - rect.top;
+    const x = clientX - rect.left - this.offsetX;
+    const y = clientY - rect.top - this.offsetY;
+
+    // 인벤토리 영역 클릭 체크
+    const invY = clientY - rect.top;
+    if (invY >= this.canvas.height - this.inventoryHeight) {
+      const slotIndex = this.getInventorySlotIndex(clientX - rect.left, invY);
+      if (slotIndex !== -1) {
+        this.game.onInventoryClick(slotIndex);
+        return;
+      }
+    }
+
     const tileX = Math.floor(x / this.tileSize);
     const tileY = Math.floor(y / this.tileSize);
 
@@ -112,8 +136,8 @@ class UIManager {
     if (e.button === 2) return;
 
     const rect = this.canvas.getBoundingClientRect();
-    const x = clientX - rect.left;
-    const y = clientY - rect.top;
+    const x = clientX - rect.left - this.offsetX;
+    const y = clientY - rect.top - this.offsetY;
     const tileX = Math.floor(x / this.tileSize);
     const tileY = Math.floor(y / this.tileSize);
 
@@ -131,8 +155,8 @@ class UIManager {
     if (!this.holdStartPos) return;
 
     const rect = this.canvas.getBoundingClientRect();
-    const x = clientX - rect.left;
-    const y = clientY - rect.top;
+    const x = clientX - rect.left - this.offsetX;
+    const y = clientY - rect.top - this.offsetY;
     const tileX = Math.floor(x / this.tileSize);
     const tileY = Math.floor(y / this.tileSize);
 
@@ -150,13 +174,36 @@ class UIManager {
     this.holdStartPos = null;
   }
 
+  getInventorySlotIndex(x, y) {
+    const slotSize = this.inventoryHeight * 0.8;
+    const slotMargin = this.inventoryHeight * 0.1;
+    const totalWidth = slotSize * 4 + slotMargin * 5;
+    const startX = (this.canvas.width - totalWidth) / 2;
+    const startY = this.canvas.height - this.inventoryHeight + slotMargin;
+
+    for (let i = 0; i < 4; i++) {
+      const slotX = startX + i * (slotSize + slotMargin) + slotMargin;
+      const slotY = startY;
+
+      if (x >= slotX && x < slotX + slotSize && y >= slotY && y < slotY + slotSize) {
+        return i;
+      }
+    }
+
+    return -1;
+  }
+
   render() {
     this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
     this.renderBoard();
+    this.renderInventory();
   }
 
   renderBoard() {
     const board = this.game.board;
+
+    this.ctx.save();
+    this.ctx.translate(this.offsetX, this.offsetY);
 
     for (let y = 0; y < board.height; y++) {
       for (let x = 0; x < board.width; x++) {
@@ -164,6 +211,8 @@ class UIManager {
         this.renderTile(tile, x, y);
       }
     }
+
+    this.ctx.restore();
   }
 
   renderTile(tile, x, y) {
@@ -173,13 +222,6 @@ class UIManager {
     // 타일 배경
     this.ctx.fillStyle = '#ccc';
     this.ctx.fillRect(px, py, this.tileSize, this.tileSize);
-
-    // 효과 범위 하이라이트
-    const isInRange = this.effectRangeTiles.some(t => t.x === x && t.y === y);
-    if (isInRange) {
-      this.ctx.fillStyle = 'rgba(255, 200, 0, 0.4)';
-      this.ctx.fillRect(px, py, this.tileSize, this.tileSize);
-    }
 
     // 타일 테두리
     this.ctx.strokeStyle = '#000';
@@ -228,20 +270,30 @@ class UIManager {
         );
         this.ctx.fill();
 
-        // 이름 전체 표시 (작은 폰트)
-        this.ctx.fillStyle = '#000';
-        this.ctx.font = `${this.tileSize * 0.13}px Arial`;
-        this.ctx.textAlign = 'center';
-        this.ctx.textBaseline = 'middle';
-
-        const name = piece.name;
-        const maxWidth = this.tileSize * 0.6;
-        this.wrapText(name, px + this.tileSize / 2, py + this.tileSize / 2, maxWidth, this.tileSize * 0.15);
-
-        // 적이면 체력바 및 상태 효과 표시
+        // 적이면 체력(중앙)과 공격력(우측 상단) 표시
         if (piece.type === 'enemy') {
-          this.renderHealthBar(piece, px, py);
-          this.renderStatusEffects(piece, px, py);
+          // 중앙에 체력
+          this.ctx.fillStyle = '#000';
+          this.ctx.font = `bold ${this.tileSize * 0.25}px Arial`;
+          this.ctx.textAlign = 'center';
+          this.ctx.textBaseline = 'middle';
+          this.ctx.fillText(piece.hp, px + this.tileSize / 2, py + this.tileSize / 2);
+
+          // 우측 상단에 공격력
+          this.ctx.fillStyle = '#f00';
+          this.ctx.font = `bold ${this.tileSize * 0.2}px Arial`;
+          this.ctx.textAlign = 'right';
+          this.ctx.textBaseline = 'top';
+          this.ctx.fillText(piece.attack, px + this.tileSize - 3, py + 3);
+        } else {
+          // 아이템/이벤트는 이름 표시
+          this.ctx.fillStyle = '#000';
+          this.ctx.font = `${this.tileSize * 0.13}px Arial`;
+          this.ctx.textAlign = 'center';
+          this.ctx.textBaseline = 'middle';
+          const name = piece.name;
+          const maxWidth = this.tileSize * 0.6;
+          this.wrapText(name, px + this.tileSize / 2, py + this.tileSize / 2, maxWidth, this.tileSize * 0.15);
         }
       } else {
         // 빈칸 - 숫자 표시
@@ -256,6 +308,66 @@ class UIManager {
             py + this.tileSize / 2
           );
         }
+      }
+    }
+  }
+
+  renderInventory() {
+    const player = this.game.player;
+    const slotSize = this.inventoryHeight * 0.8;
+    const slotMargin = this.inventoryHeight * 0.1;
+    const totalWidth = slotSize * 4 + slotMargin * 5;
+    const startX = (this.canvas.width - totalWidth) / 2;
+    const startY = this.canvas.height - this.inventoryHeight + slotMargin;
+
+    // 배경
+    this.ctx.fillStyle = '#333';
+    this.ctx.fillRect(0, this.canvas.height - this.inventoryHeight, this.canvas.width, this.inventoryHeight);
+
+    // 4개의 인벤토리 슬롯
+    for (let i = 0; i < 4; i++) {
+      const x = startX + i * (slotSize + slotMargin) + slotMargin;
+      const y = startY;
+
+      // 슬롯 배경
+      const isEquipped = player.equippedSlot === i;
+      this.ctx.fillStyle = isEquipped ? '#4a4' : '#555';
+      this.ctx.fillRect(x, y, slotSize, slotSize);
+
+      // 슬롯 테두리
+      this.ctx.strokeStyle = isEquipped ? '#0f0' : '#fff';
+      this.ctx.lineWidth = isEquipped ? 3 : 2;
+      this.ctx.strokeRect(x, y, slotSize, slotSize);
+
+      // 아이템이 있으면 표시
+      const item = player.inventory[i];
+      if (item) {
+        // 아이템 아이콘 (원)
+        this.ctx.fillStyle = '#4af';
+        this.ctx.beginPath();
+        this.ctx.arc(x + slotSize / 2, y + slotSize / 3, slotSize / 4, 0, Math.PI * 2);
+        this.ctx.fill();
+
+        // 아이템 이름
+        this.ctx.fillStyle = '#fff';
+        this.ctx.font = `${slotSize * 0.12}px Arial`;
+        this.ctx.textAlign = 'center';
+        this.ctx.textBaseline = 'top';
+        this.ctx.fillText(item.name, x + slotSize / 2, y + slotSize * 0.55);
+
+        // 공격력 표시
+        this.ctx.fillStyle = '#f00';
+        this.ctx.font = `bold ${slotSize * 0.15}px Arial`;
+        this.ctx.textAlign = 'left';
+        this.ctx.textBaseline = 'top';
+        this.ctx.fillText(`+${item.attack}`, x + 3, y + 3);
+
+        // 내구도 표시
+        this.ctx.fillStyle = '#0ff';
+        this.ctx.font = `${slotSize * 0.12}px Arial`;
+        this.ctx.textAlign = 'right';
+        this.ctx.textBaseline = 'bottom';
+        this.ctx.fillText(`${item.durability}/${item.maxDurability}`, x + slotSize - 3, y + slotSize - 3);
       }
     }
   }
@@ -284,38 +396,6 @@ class UIManager {
     }
   }
 
-  renderHealthBar(enemy, px, py) {
-    const barWidth = this.tileSize * 0.6;
-    const barHeight = this.tileSize * 0.08;
-    const barX = px + (this.tileSize - barWidth) / 2;
-    const barY = py + this.tileSize * 0.1;
-
-    // 배경
-    this.ctx.fillStyle = '#333';
-    this.ctx.fillRect(barX, barY, barWidth, barHeight);
-
-    // HP 바
-    const hpRatio = enemy.hp / enemy.maxHp;
-    this.ctx.fillStyle = '#0f0';
-    this.ctx.fillRect(barX, barY, barWidth * hpRatio, barHeight);
-
-    // 테두리
-    this.ctx.strokeStyle = '#000';
-    this.ctx.lineWidth = 1;
-    this.ctx.strokeRect(barX, barY, barWidth, barHeight);
-
-    // HP 텍스트
-    this.ctx.fillStyle = '#fff';
-    this.ctx.font = `${this.tileSize * 0.1}px Arial`;
-    this.ctx.textAlign = 'center';
-    this.ctx.textBaseline = 'middle';
-    this.ctx.fillText(
-      `${enemy.hp}/${enemy.maxHp}`,
-      barX + barWidth / 2,
-      barY + barHeight / 2
-    );
-  }
-
   getNumberColor(num) {
     const colors = ['#000', '#0000ff', '#008000', '#ff0000', '#800080', '#800000', '#008080', '#000000', '#808080'];
     return colors[Math.min(num, colors.length - 1)];
@@ -327,34 +407,17 @@ class UIManager {
 
     const floorEl = document.getElementById('floorText');
     const hpEl = document.getElementById('hpText');
-    const mpEl = document.getElementById('mpText');
-    const expEl = document.getElementById('expText');
-    const goldEl = document.getElementById('goldText');
+    const attackEl = document.getElementById('attackText');
 
     if (floorEl) floorEl.textContent = `Floor ${floor}`;
     if (hpEl) hpEl.textContent = `HP: ${player.getHp()}/${player.getMaxHp()}`;
-    if (mpEl) mpEl.textContent = `MP: ${player.mp}/${player.maxMp}`;
-    if (expEl) {
-      const expPercent = Math.floor((player.exp / player.expToNext) * 100);
-      expEl.textContent = `LV${player.level} [${expPercent}%]`;
-    }
-    if (goldEl) goldEl.textContent = `💰 ${player.gold}`;
-
-    // 플레이어 상태 효과 표시
-    const statusEl = document.getElementById('statusText');
-    if (statusEl) {
-      let statusText = '';
-      if (player.statusEffects.poison) statusText += `🧪${player.statusEffects.poison} `;
-      if (player.statusEffects.burn) statusText += `🔥${player.statusEffects.burn} `;
-      if (player.statusEffects.freeze) statusText += '❄️ ';
-      statusEl.textContent = statusText.trim();
-    }
+    if (attackEl) attackEl.textContent = `공격력: ${player.getAttack()}`;
   }
 
   handleHover(clientX, clientY) {
     const rect = this.canvas.getBoundingClientRect();
-    const x = clientX - rect.left;
-    const y = clientY - rect.top;
+    const x = clientX - rect.left - this.offsetX;
+    const y = clientY - rect.top - this.offsetY;
     const tileX = Math.floor(x / this.tileSize);
     const tileY = Math.floor(y / this.tileSize);
 
@@ -364,18 +427,12 @@ class UIManager {
     if (tile && tile.explored && tile.hasPiece() && !tile.hasBlock()) {
       if (!this.hoverTile || this.hoverTile.x !== tileX || this.hoverTile.y !== tileY) {
         this.hoverTile = { x: tileX, y: tileY };
-        this.hoverPiece = tile.piece;
-        this.effectRangeTiles = this.calculateEffectRange(tile.piece);
         this.showTileTooltip(tile.piece, clientX, clientY);
-        this.render(); // 효과 범위 표시를 위해 다시 렌더링
       }
     } else {
       if (this.hoverTile) {
         this.hoverTile = null;
-        this.hoverPiece = null;
-        this.effectRangeTiles = [];
         this.hideTileTooltip();
-        this.render(); // 효과 범위 제거를 위해 다시 렌더링
       }
     }
   }
@@ -394,22 +451,16 @@ class UIManager {
       tooltipHTML += `
         <div class="tooltip-stat">HP: ${piece.hp}/${piece.maxHp}</div>
         <div class="tooltip-stat">공격력: ${piece.attack}</div>
-        <div class="tooltip-stat">방어력: ${piece.defense}</div>
       `;
-      if (piece.critRate > 0) tooltipHTML += `<div class="tooltip-stat">치명타율: ${piece.critRate}%</div>`;
-      if (piece.evasion > 0) tooltipHTML += `<div class="tooltip-stat">회피율: ${piece.evasion}%</div>`;
-      if (piece.durability) tooltipHTML += `<div class="tooltip-stat">내구도: ${piece.durability}</div>`;
       if (piece.description) tooltipHTML += `<div class="tooltip-description">${piece.description}</div>`;
-      if (piece.effect) tooltipHTML += `<div class="tooltip-effect">효과: ${piece.effect}</div>`;
     } else if (piece.type === 'item') {
       tooltipHTML += `
-        <div class="tooltip-stat">내구도: ${piece.durability}</div>
+        <div class="tooltip-stat">공격력: +${piece.attack}</div>
+        <div class="tooltip-stat">내구도: ${piece.durability}/${piece.maxDurability}</div>
       `;
       if (piece.description) tooltipHTML += `<div class="tooltip-description">${piece.description}</div>`;
-      if (piece.effect) tooltipHTML += `<div class="tooltip-effect">효과: ${piece.effect}</div>`;
     } else if (piece.type === 'event') {
       if (piece.description) tooltipHTML += `<div class="tooltip-description">${piece.description}</div>`;
-      if (piece.effect) tooltipHTML += `<div class="tooltip-effect">효과: ${piece.effect}</div>`;
     }
 
     tooltip.innerHTML = tooltipHTML;
@@ -446,207 +497,6 @@ class UIManager {
     if (tooltip) {
       tooltip.remove();
       this.tooltipVisible = false;
-    }
-  }
-
-  // 효과 범위 계산
-  calculateEffectRange(piece) {
-    if (!piece || !piece.effect) return [];
-
-    const board = this.game.board;
-    const tiles = [];
-
-    switch (piece.effect) {
-      case 'bow_attack':
-      case 'poison_apply_3':
-      case 'burn_apply_4':
-      case 'freeze_apply':
-        // 단일 타겟: 공개된 모든 적 타일
-        board.getTiles().forEach(tile => {
-          if (tile.explored && tile.hasPiece() && tile.piece.type === 'enemy') {
-            tiles.push({ x: tile.x, y: tile.y });
-          }
-        });
-        break;
-
-      case 'staff_attack':
-        // 행/열 전체: 공개된 적이 있는 모든 행과 열
-        const enemyPositions = [];
-        board.getTiles().forEach(tile => {
-          if (tile.explored && tile.hasPiece() && tile.piece.type === 'enemy') {
-            enemyPositions.push({ x: tile.x, y: tile.y });
-          }
-        });
-
-        // 각 행의 적 수 계산
-        const rowCounts = {};
-        const colCounts = {};
-        enemyPositions.forEach(pos => {
-          rowCounts[pos.y] = (rowCounts[pos.y] || 0) + 1;
-          colCounts[pos.x] = (colCounts[pos.x] || 0) + 1;
-        });
-
-        // 최대 적 수를 가진 행/열 찾기
-        let maxCount = 0;
-        let bestRows = [];
-        let bestCols = [];
-
-        Object.keys(rowCounts).forEach(row => {
-          const count = rowCounts[row];
-          if (count > maxCount) {
-            maxCount = count;
-            bestRows = [parseInt(row)];
-          } else if (count === maxCount) {
-            bestRows.push(parseInt(row));
-          }
-        });
-
-        Object.keys(colCounts).forEach(col => {
-          const count = colCounts[col];
-          if (count > maxCount) {
-            maxCount = count;
-            bestRows = [];
-            bestCols = [parseInt(col)];
-          } else if (count === maxCount && bestRows.length === 0) {
-            bestCols.push(parseInt(col));
-          }
-        });
-
-        // 최적 행 하이라이트
-        bestRows.forEach(row => {
-          for (let x = 0; x < board.width; x++) {
-            tiles.push({ x, y: row });
-          }
-        });
-
-        // 최적 열 하이라이트
-        bestCols.forEach(col => {
-          for (let y = 0; y < board.height; y++) {
-            tiles.push({ x: col, y });
-          }
-        });
-        break;
-
-      case 'bomb_attack':
-        // 3x3 영역: 블록/아이템이 있는 모든 위치 주변 3x3
-        let bestX = 0, bestY = 0, maxBlockCount = 0;
-
-        // 최적 위치 찾기
-        for (let y = 0; y < board.height; y++) {
-          for (let x = 0; x < board.width; x++) {
-            let count = 0;
-            for (let dy = -1; dy <= 1; dy++) {
-              for (let dx = -1; dx <= 1; dx++) {
-                const tile = board.getTile(x + dx, y + dy);
-                if (tile && (tile.hasBlock() || (tile.hasPiece() && tile.piece.type === 'item'))) {
-                  count++;
-                }
-              }
-            }
-            if (count > maxBlockCount) {
-              maxBlockCount = count;
-              bestX = x;
-              bestY = y;
-            }
-          }
-        }
-
-        // 최적 위치 주변 3x3 하이라이트
-        if (maxBlockCount > 0) {
-          for (let dy = -1; dy <= 1; dy++) {
-            for (let dx = -1; dx <= 1; dx++) {
-              const tx = bestX + dx;
-              const ty = bestY + dy;
-              if (tx >= 0 && tx < board.width && ty >= 0 && ty < board.height) {
-                tiles.push({ x: tx, y: ty });
-              }
-            }
-          }
-        }
-        break;
-
-      case 'split_on_death':
-        // 슬라임 분열: 주변 8칸
-        if (this.hoverTile) {
-          const cx = this.hoverTile.x;
-          const cy = this.hoverTile.y;
-          const directions = [
-            [-1, -1], [0, -1], [1, -1],
-            [-1, 0],           [1, 0],
-            [-1, 1],  [0, 1],  [1, 1]
-          ];
-          directions.forEach(([dx, dy]) => {
-            const tx = cx + dx;
-            const ty = cy + dy;
-            if (tx >= 0 && tx < board.width && ty >= 0 && ty < board.height) {
-              tiles.push({ x: tx, y: ty });
-            }
-          });
-        }
-        break;
-
-      case 'bomb_death':
-        // 폭탄쥐 폭발: 주변 3x3
-        if (this.hoverTile) {
-          const cx = this.hoverTile.x;
-          const cy = this.hoverTile.y;
-          for (let dy = -1; dy <= 1; dy++) {
-            for (let dx = -1; dx <= 1; dx++) {
-              const tx = cx + dx;
-              const ty = cy + dy;
-              if (tx >= 0 && tx < board.width && ty >= 0 && ty < board.height) {
-                tiles.push({ x: tx, y: ty });
-              }
-            }
-          }
-        }
-        break;
-
-      case 'poison_attack':
-      case 'burn_attack':
-        // 적의 전투 효과: 플레이어 피해 (표시 안 함)
-        break;
-
-      default:
-        // 기타 효과는 범위 표시 안 함
-        break;
-    }
-
-    return tiles;
-  }
-
-  // 상태 효과 아이콘 표시
-  renderStatusEffects(piece, px, py) {
-    if (!piece.statusEffects) return;
-
-    const iconSize = this.tileSize * 0.15;
-    let iconX = px + this.tileSize - iconSize - 2;
-    const iconY = py + 2;
-
-    // 독
-    if (piece.statusEffects.poison) {
-      this.ctx.font = `${iconSize}px Arial`;
-      this.ctx.textAlign = 'right';
-      this.ctx.textBaseline = 'top';
-      this.ctx.fillText(`🧪${piece.statusEffects.poison}`, iconX, iconY);
-      iconX -= iconSize * 2;
-    }
-
-    // 화상
-    if (piece.statusEffects.burn) {
-      this.ctx.font = `${iconSize}px Arial`;
-      this.ctx.textAlign = 'right';
-      this.ctx.textBaseline = 'top';
-      this.ctx.fillText(`🔥${piece.statusEffects.burn}`, iconX, iconY);
-      iconX -= iconSize * 2;
-    }
-
-    // 빙결
-    if (piece.statusEffects.freeze) {
-      this.ctx.font = `${iconSize}px Arial`;
-      this.ctx.textAlign = 'right';
-      this.ctx.textBaseline = 'top';
-      this.ctx.fillText('❄️', iconX, iconY);
     }
   }
 }

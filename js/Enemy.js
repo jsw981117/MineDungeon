@@ -1,53 +1,9 @@
 class Enemy extends Piece {
   constructor(data) {
     super(data);
-    this.baseHp = data.hp; // 기본 HP (스케일링 기준)
     this.hp = data.hp;
     this.maxHp = data.hp;
     this.attack = data.attack || 1;
-    this.defense = data.defense || 0;
-    this.durability = data.durability || 1;
-    this.expReward = data.expReward || (this.maxHp * 10);
-
-    // 선택적 능력치 (강한 적용)
-    this.critRate = data.critRate || 0;
-    this.critDamage = data.critDamage || 150;
-    this.evasion = data.evasion || 0;
-
-    // 상태 효과 (키워드)
-    this.statusEffects = {}; // { poison: 3, burn: 2, freeze: true }
-  }
-
-  // 상태 효과 관리 (Player와 동일)
-  addStatusEffect(keyword, value = 1) {
-    if (KEYWORDS_DATA[keyword].stackable && KEYWORDS_DATA[keyword].hasValue) {
-      this.statusEffects[keyword] = (this.statusEffects[keyword] || 0) + value;
-    } else {
-      this.statusEffects[keyword] = true;
-    }
-  }
-
-  removeStatusEffect(keyword) {
-    delete this.statusEffects[keyword];
-  }
-
-  hasStatusEffect(keyword) {
-    return !!this.statusEffects[keyword];
-  }
-
-  getStatusEffect(keyword) {
-    return this.statusEffects[keyword];
-  }
-
-  decreaseStatusEffect(keyword, amount = 1) {
-    if (this.statusEffects[keyword]) {
-      if (typeof this.statusEffects[keyword] === 'number') {
-        this.statusEffects[keyword] -= amount;
-        if (this.statusEffects[keyword] <= 0) {
-          delete this.statusEffects[keyword];
-        }
-      }
-    }
   }
 
   // 기습 공격 (블럭 제거 시 적 발견)
@@ -55,21 +11,9 @@ class Enemy extends Piece {
     console.log(`${this.name}의 기습!`);
 
     // 적이 먼저 공격 (기습 ×1.5)
-    const result = CombatCalculator.enemyAttackPlayer(this, player, true);
-
-    if (result.isEvaded) {
-      console.log('회피!');
-    } else {
-      // 화상 효과를 포함한 피해 처리
-      player.takeDamageWithEffects(result.damage);
-      if (result.isCrit) console.log(`치명타! ${result.damage} 피해!`);
-      else console.log(`${result.damage} 피해!`);
-    }
-
-    // 전투 효과
-    if (this.effect) {
-      EffectHandler.apply(this.effect, this, { player, game, event: 'on_combat' });
-    }
+    const damage = Math.floor(this.attack * 1.5);
+    player.takeDamage(damage);
+    console.log(`${damage} 피해!`);
 
     return player.isDead();
   }
@@ -78,41 +22,14 @@ class Enemy extends Piece {
   playerAttack(player, game, tile = null) {
     console.log(`${this.name}에게 공격!`);
 
-    // 플레이어 빙결 체크
-    if (player.hasStatusEffect('freeze')) {
-      console.log('빙결 상태! 공격이 무효화되었습니다.');
-      player.removeStatusEffect('freeze');
-      return false; // 적 생존, 반격 없음
-    }
-
     // 플레이어가 먼저 공격
-    const playerResult = CombatCalculator.playerAttackEnemy(player, this);
-
-    if (playerResult.isEvaded) {
-      console.log('적이 회피!');
-    } else {
-      this.hp = Math.max(0, this.hp - playerResult.damage);
-      if (playerResult.isCrit) console.log(`치명타! ${playerResult.damage} 피해!`);
-      else console.log(`${playerResult.damage} 피해!`);
-    }
+    const playerDamage = player.getAttack();
+    this.hp = Math.max(0, this.hp - playerDamage);
+    console.log(`${playerDamage} 피해!`);
 
     // 적 사망 체크
     if (this.hp <= 0) {
       console.log(`${this.name} 처치!`);
-      if (this.effect) {
-        EffectHandler.apply(this.effect, this, { player, game, tile, event: 'on_death' });
-      }
-
-      // 경험치 및 골드 획득
-      player.gainExp(1);
-      player.gold += 5; // 고정 5골드
-
-      // 내구도 감소
-      this.durability--;
-      if (this.durability <= 0) {
-        game.deck.removeEnemy(this);
-        console.log(`${this.name}이(가) 덱에서 제거되었습니다!`);
-      }
 
       // 주변 타일 숫자 업데이트
       if (tile && game.board) {
@@ -122,23 +39,10 @@ class Enemy extends Piece {
       return true; // 타일에서 제거
     }
 
-    // 적이 반격 (빙결 체크)
-    if (!this.hasStatusEffect('freeze')) {
-      const enemyResult = CombatCalculator.enemyAttackPlayer(this, player, false);
-
-      if (enemyResult.isEvaded) {
-        console.log('회피!');
-      } else {
-        // 화상 효과를 포함한 피해 처리
-        player.takeDamageWithEffects(enemyResult.damage);
-        if (enemyResult.isCrit) console.log(`${this.name}의 치명타! ${enemyResult.damage} 피해!`);
-        else console.log(`${this.name}의 반격! ${enemyResult.damage} 피해!`);
-      }
-    } else {
-      // 빙결 상태: 반격 불가
-      console.log(`${this.name}은(는) 빙결 상태라 반격하지 못했습니다!`);
-      this.removeStatusEffect('freeze');
-    }
+    // 적이 반격
+    const enemyDamage = this.attack;
+    player.takeDamage(enemyDamage);
+    console.log(`${this.name}의 반격! ${enemyDamage} 피해!`);
 
     return false; // 적 생존
   }
