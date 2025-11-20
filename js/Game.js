@@ -152,7 +152,11 @@ class Game {
     const blockedTiles = tiles.filter(t => t.hasBlock());
 
     // 블록이 없으면 체크 안함
-    if (blockedTiles.length === 0) return;
+    if (blockedTiles.length === 0) {
+      // 블록이 없으면 계단 생성 체크
+      this.checkStairSpawn();
+      return;
+    }
 
     // 모든 블록 타일이 적인지 확인
     const allEnemies = blockedTiles.every(tile => {
@@ -180,6 +184,15 @@ class Game {
             console.log(`${enemy.name} 처치!`);
             totalKills++;
 
+            // 뱀파이어 나이프 장착 시 HP 회복
+            if (this.player.equippedSlot !== null && this.player.inventory[this.player.equippedSlot]) {
+              const equippedItem = this.player.inventory[this.player.equippedSlot];
+              if (equippedItem.isVampiric) {
+                this.player.heal(1);
+                console.log('뱀파이어 효과로 HP 1 회복!');
+              }
+            }
+
             // 사망 애니메이션
             if (this.uiManager) {
               this.uiManager.addDeathAnimation(tile.x, tile.y, enemy);
@@ -198,6 +211,45 @@ class Game {
       this.uiManager.render();
 
       this.showMessage('필살기 발동!');
+
+      // 계단 생성 체크
+      this.checkStairSpawn();
+    }
+  }
+
+  checkStairSpawn() {
+    const tiles = this.board.getTiles();
+
+    // 탐색되지 않은 타일들 찾기
+    const unexploredTiles = tiles.filter(t => !t.explored);
+
+    // 탐색되지 않은 타일이 없으면 계단 생성
+    if (unexploredTiles.length === 0) {
+      // 정중앙 위치 계산
+      const centerX = Math.floor(this.board.width / 2);
+      const centerY = Math.floor(this.board.height / 2);
+      const centerTile = this.board.getTile(centerX, centerY);
+
+      // 정중앙에 이미 계단이 있거나 피스가 있으면 생성 안함
+      if (centerTile && (!centerTile.hasPiece() || centerTile.piece.id !== 'stair')) {
+        // 기존 피스 제거 (있다면)
+        if (centerTile.hasPiece()) {
+          centerTile.removePiece();
+        }
+
+        // 계단 생성
+        const stair = new Event({
+          id: 'stair',
+          name: '계단',
+          type: 'event'
+        });
+        centerTile.setPiece(stair);
+        centerTile.explored = true;
+
+        console.log('계단이 생성되었습니다!');
+        this.showMessage('계단 출현!');
+        this.uiManager.render();
+      }
     }
   }
 

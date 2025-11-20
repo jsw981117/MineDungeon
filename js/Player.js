@@ -14,7 +14,14 @@ class Player {
     if (this.equippedSlot !== null && this.inventory[this.equippedSlot]) {
       const equippedItem = this.inventory[this.equippedSlot];
       const slotIndex = this.equippedSlot;
-      equippedItem.durability -= amount;
+
+      // 방패는 피해를 1로 고정
+      let durabilityDamage = amount;
+      if (equippedItem.isShield) {
+        durabilityDamage = 1;
+      }
+
+      equippedItem.durability -= durabilityDamage;
 
       if (equippedItem.durability <= 0) {
         // 아이템 파괴 - 애니메이션용 정보 반환

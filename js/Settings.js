@@ -60,6 +60,10 @@ class Settings {
       { id: 'sword', name: '검', attack: 3, durability: 5, usable: false, equippable: true },
       { id: 'axe', name: '도끼', attack: 5, durability: 3, usable: false, equippable: true },
       { id: 'spear', name: '창', attack: 2, durability: 10, usable: false, equippable: true },
+      { id: 'shield', name: '방패', attack: 1, durability: 10, usable: false, equippable: true, isShield: true },
+      { id: 'glass_sword', name: '유리 검', attack: 8, durability: 3, usable: false, equippable: true },
+      { id: 'vampiric_knife', name: '뱀파이어 나이프', attack: 2, durability: 6, usable: false, equippable: true, isVampiric: true },
+      { id: 'golden_key', name: '황금 열쇠', attack: 0, durability: 1, usable: true, equippable: false, effect: 'discard' },
       { id: 'health_potion', name: '회복 포션', attack: 0, durability: 1, usable: true, equippable: false, effect: 'heal', effectValue: 30 }
     ];
   }

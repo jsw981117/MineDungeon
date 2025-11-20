@@ -36,6 +36,15 @@ class Enemy extends Piece {
     if (this.hp <= 0) {
       console.log(`${this.name} 처치!`);
 
+      // 뱀파이어 나이프 장착 시 HP 회복
+      if (player.equippedSlot !== null && player.inventory[player.equippedSlot]) {
+        const equippedItem = player.inventory[player.equippedSlot];
+        if (equippedItem.isVampiric) {
+          player.heal(1);
+          console.log('뱀파이어 효과로 HP 1 회복!');
+        }
+      }
+
       // 사망 애니메이션
       if (tile && game.uiManager) {
         game.uiManager.addDeathAnimation(tile.x, tile.y, this);

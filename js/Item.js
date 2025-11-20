@@ -8,6 +8,8 @@ class Item extends Piece {
     this.equippable = data.equippable !== undefined ? data.equippable : true;
     this.effect = data.effect || null;
     this.effectValue = data.effectValue || 0;
+    this.isShield = data.isShield || false;
+    this.isVampiric = data.isVampiric || false;
   }
 
   interact(player, game, tile = null) {
@@ -30,6 +32,9 @@ class Item extends Piece {
       case 'heal':
         player.heal(this.effectValue);
         console.log(`${this.name} 사용! HP ${this.effectValue} 회복`);
+        break;
+      case 'discard':
+        console.log(`${this.name}을(를) 버렸습니다.`);
         break;
       default:
         return false;
