@@ -29,7 +29,8 @@ class UIManager {
 
     // 애니메이션 시스템
     this.animations = [];
-    this.lastFrameTime = Date.now();
+    this.lastFrameTime = 0;
+    this.isAnimating = false;
 
     this.setupCanvas();
     this.setupEvents();
@@ -359,7 +360,6 @@ class UIManager {
     this.renderStatsUI();
     this.renderInventory();
     this.renderAnimations();
-    this.updateAnimations();
   }
 
   renderBoard() {
@@ -611,6 +611,9 @@ class UIManager {
     if (this.animations.length > 100) {
       this.animations.shift();
     }
+
+    // 애니메이션 루프 시작
+    this.startAnimationLoop();
   }
 
   addItemBreakAnimation(slotIndex, item) {
@@ -650,10 +653,24 @@ class UIManager {
     if (this.animations.length > 100) {
       this.animations.shift();
     }
+
+    // 애니메이션 루프 시작
+    this.startAnimationLoop();
   }
 
-  updateAnimations() {
-    if (this.animations.length === 0) return;
+  startAnimationLoop() {
+    if (this.isAnimating) return; // 이미 실행 중이면 무시
+
+    this.isAnimating = true;
+    this.lastFrameTime = Date.now();
+    this.animationLoop();
+  }
+
+  animationLoop() {
+    if (this.animations.length === 0) {
+      this.isAnimating = false;
+      return;
+    }
 
     const now = Date.now();
     const deltaTime = (now - this.lastFrameTime) / 16.67; // 60fps 기준 정규화
@@ -671,9 +688,14 @@ class UIManager {
       return anim.y < this.canvas.height + 100;
     });
 
-    // 애니메이션이 있으면 다시 렌더링
+    // 렌더링
+    this.render();
+
+    // 애니메이션이 남아있으면 계속
     if (this.animations.length > 0) {
-      requestAnimationFrame(() => this.render());
+      requestAnimationFrame(() => this.animationLoop());
+    } else {
+      this.isAnimating = false;
     }
   }
 
