@@ -25,6 +25,11 @@ class UIManager {
     this.hoverTile = null;
     this.tooltipVisible = false;
     this.inventoryHeight = 0;
+    this.statsUIHeight = 0;
+
+    // 애니메이션 시스템
+    this.animations = [];
+    this.lastFrameTime = Date.now();
 
     this.setupCanvas();
     this.setupEvents();
@@ -55,6 +60,7 @@ class UIManager {
 
     const inventoryRatio = 0.15;
     this.inventoryHeight = containerHeight * inventoryRatio;
+    this.statsUIHeight = this.inventoryHeight * this.game.settings.getStatsUIHeight();
     const boardHeight = containerHeight * (1 - inventoryRatio);
 
     const boardSize = Math.min(containerWidth, boardHeight) * 0.9;
@@ -202,9 +208,9 @@ class UIManager {
     const canvasX = clientX - rect.left;
     const canvasY = clientY - rect.top;
 
-    // 인벤토리 영역 체크 (모바일 safe area 고려)
+    // 인벤토리 + 능력치 UI 영역 체크 (모바일 safe area 고려)
     const bottomSafeArea = 30;
-    if (canvasY >= this.canvas.height - this.inventoryHeight - bottomSafeArea) {
+    if (canvasY >= this.canvas.height - this.inventoryHeight - this.statsUIHeight - bottomSafeArea) {
       return null;
     }
 
@@ -225,14 +231,21 @@ class UIManager {
     const canvasX = clientX - rect.left;
     const canvasY = clientY - rect.top;
 
-    // 인벤토리 클릭 체크 (모바일 safe area 고려)
     const bottomSafeArea = 30;
+
+    // 인벤토리 클릭 체크 (모바일 safe area 고려)
     if (canvasY >= this.canvas.height - this.inventoryHeight - bottomSafeArea) {
       const slotIndex = this.getInventorySlotIndex(canvasX, canvasY);
       if (slotIndex !== -1) {
         this.game.onInventoryClick(slotIndex);
         return;
       }
+    }
+
+    // 능력치 UI 영역 클릭 무시
+    if (canvasY >= this.canvas.height - this.inventoryHeight - this.statsUIHeight - bottomSafeArea &&
+        canvasY < this.canvas.height - this.inventoryHeight - bottomSafeArea) {
+      return;
     }
 
     // 팬 시작
@@ -343,7 +356,10 @@ class UIManager {
   render() {
     this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
     this.renderBoard();
+    this.renderStatsUI();
     this.renderInventory();
+    this.renderAnimations();
+    this.updateAnimations();
   }
 
   renderBoard() {
@@ -450,6 +466,39 @@ class UIManager {
     }
   }
 
+  renderStatsUI() {
+    const player = this.game.player;
+    const bottomSafeArea = 30;
+
+    // 능력치 UI 크기 계산
+    const uiWidth = this.inventoryHeight * 4 * this.game.settings.getStatsUIWidth();
+    const uiHeight = this.statsUIHeight;
+    const startX = (this.canvas.width - uiWidth) / 2;
+    const startY = this.canvas.height - this.inventoryHeight - this.statsUIHeight - bottomSafeArea;
+
+    // 배경
+    this.ctx.fillStyle = '#222';
+    this.ctx.fillRect(startX, startY, uiWidth, uiHeight);
+    this.ctx.strokeStyle = '#fff';
+    this.ctx.lineWidth = 2;
+    this.ctx.strokeRect(startX, startY, uiWidth, uiHeight);
+
+    // HP 표시 (왼쪽)
+    const hpTextSize = uiHeight * 0.4 * this.game.settings.getStatsHpTextScale();
+    this.ctx.font = `${hpTextSize}px Arial`;
+    this.ctx.textAlign = 'left';
+    this.ctx.textBaseline = 'middle';
+    this.ctx.fillStyle = '#f00';
+    this.ctx.fillText(`❤️ ${player.hp}`, startX + uiHeight * 0.1, startY + uiHeight / 2);
+
+    // 공격력 표시 (오른쪽)
+    const attackTextSize = uiHeight * 0.4 * this.game.settings.getStatsAttackTextScale();
+    this.ctx.font = `${attackTextSize}px Arial`;
+    this.ctx.textAlign = 'right';
+    this.ctx.fillStyle = '#ff0';
+    this.ctx.fillText(`⚔️ ${player.getAttack()}`, startX + uiWidth - uiHeight * 0.1, startY + uiHeight / 2);
+  }
+
   renderInventory() {
     const player = this.game.player;
     const slotSize = this.inventoryHeight * 0.8;
@@ -531,6 +580,122 @@ class UIManager {
   getNumberColor(num) {
     const colors = ['#000', '#0000ff', '#008000', '#ff0000', '#800080', '#800000', '#008080', '#000000', '#808080'];
     return colors[Math.min(num, colors.length - 1)];
+  }
+
+  // 애니메이션 시스템
+  addDeathAnimation(tileX, tileY, piece) {
+    if (!this.game.settings.getAnimationEnabled()) return;
+
+    // 타일 좌표를 화면 좌표로 변환 (줌/팬 적용)
+    const screenX = this.offsetX + tileX * this.tileSize * this.scale + (this.tileSize * this.scale) / 2 + this.panX;
+    const screenY = this.offsetY + tileY * this.tileSize * this.scale + (this.tileSize * this.scale) / 2 + this.panY;
+
+    const initialVY = this.game.settings.getAnimationInitialVelocityY();
+    const randomVX = (Math.random() - 0.5) * 6;
+
+    this.animations.push({
+      x: screenX,
+      y: screenY,
+      vx: randomVX,
+      vy: initialVY,
+      startTime: Date.now(),
+      type: piece.type,
+      data: {
+        name: piece.name,
+        color: piece.type === 'enemy' ? '#f00' : '#4af'
+      }
+    });
+
+    // 최대 100개 제한
+    if (this.animations.length > 100) {
+      this.animations.shift();
+    }
+  }
+
+  addItemBreakAnimation(slotIndex, item) {
+    if (!this.game.settings.getAnimationEnabled()) return;
+
+    // 인벤토리 슬롯 위치 계산
+    const slotSize = this.inventoryHeight * 0.8;
+    const slotMargin = this.inventoryHeight * 0.1;
+    const totalWidth = slotSize * 4 + slotMargin * 5;
+    const startX = (this.canvas.width - totalWidth) / 2;
+    const bottomSafeArea = 30;
+    const startY = this.canvas.height - this.inventoryHeight + slotMargin - bottomSafeArea;
+
+    const slotX = startX + slotIndex * (slotSize + slotMargin) + slotMargin;
+    const slotY = startY;
+    const screenX = slotX + slotSize / 2;
+    const screenY = slotY + slotSize / 2;
+
+    const initialVY = this.game.settings.getAnimationInitialVelocityY();
+    const randomVX = (Math.random() - 0.5) * 6;
+
+    this.animations.push({
+      x: screenX,
+      y: screenY,
+      vx: randomVX,
+      vy: initialVY,
+      startTime: Date.now(),
+      type: 'item',
+      data: {
+        name: item.name,
+        color: '#4af'
+      }
+    });
+
+    // 최대 100개 제한
+    if (this.animations.length > 100) {
+      this.animations.shift();
+    }
+  }
+
+  updateAnimations() {
+    if (this.animations.length === 0) return;
+
+    const now = Date.now();
+    const deltaTime = (now - this.lastFrameTime) / 16.67; // 60fps 기준 정규화
+    this.lastFrameTime = now;
+
+    const gravity = this.game.settings.getAnimationGravity();
+
+    // 애니메이션 업데이트
+    this.animations = this.animations.filter(anim => {
+      anim.vy += gravity * deltaTime;
+      anim.x += anim.vx * deltaTime;
+      anim.y += anim.vy * deltaTime;
+
+      // 화면 아래로 벗어나면 제거
+      return anim.y < this.canvas.height + 100;
+    });
+
+    // 애니메이션이 있으면 다시 렌더링
+    if (this.animations.length > 0) {
+      requestAnimationFrame(() => this.render());
+    }
+  }
+
+  renderAnimations() {
+    if (this.animations.length === 0) return;
+
+    this.animations.forEach(anim => {
+      this.ctx.save();
+
+      // 원 그리기
+      this.ctx.fillStyle = anim.data.color;
+      this.ctx.beginPath();
+      this.ctx.arc(anim.x, anim.y, 15, 0, Math.PI * 2);
+      this.ctx.fill();
+
+      // 이름 그리기
+      this.ctx.fillStyle = '#fff';
+      this.ctx.font = '12px Arial';
+      this.ctx.textAlign = 'center';
+      this.ctx.textBaseline = 'middle';
+      this.ctx.fillText(anim.data.name, anim.x, anim.y);
+
+      this.ctx.restore();
+    });
   }
 
   updateStats() {

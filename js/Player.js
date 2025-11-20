@@ -13,18 +13,22 @@ class Player {
     // 아이템이 장착되어 있으면 내구도가 먼저 깎임
     if (this.equippedSlot !== null && this.inventory[this.equippedSlot]) {
       const equippedItem = this.inventory[this.equippedSlot];
+      const slotIndex = this.equippedSlot;
       equippedItem.durability -= amount;
 
       if (equippedItem.durability <= 0) {
-        // 아이템 파괴
+        // 아이템 파괴 - 애니메이션용 정보 반환
         console.log(`${equippedItem.name}이(가) 파괴되었습니다!`);
+        const brokenItem = { ...equippedItem }; // 복사
         this.inventory[this.equippedSlot] = null;
         this.equippedSlot = null;
+        return { broken: true, slotIndex, item: brokenItem };
       }
     } else {
       // 아이템 미장착 시 체력이 깎임
       this.hp = Math.max(0, this.hp - amount);
     }
+    return null;
   }
 
   heal(amount) {

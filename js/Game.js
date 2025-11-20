@@ -161,6 +161,11 @@ class Game {
             console.log(`${enemy.name} 처치!`);
             totalKills++;
 
+            // 사망 애니메이션
+            if (this.uiManager) {
+              this.uiManager.addDeathAnimation(tile.x, tile.y, enemy);
+            }
+
             // 타일에서 제거
             tile.removePiece();
 

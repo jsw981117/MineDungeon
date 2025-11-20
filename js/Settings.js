@@ -8,6 +8,17 @@ class Settings {
     this.vibrationEnabled = localStorage.getItem('vibrationEnabled') !== 'false'; // 기본값: true
     this.vibrationIntensity = parseInt(localStorage.getItem('vibrationIntensity')) || 2; // 0-3, 기본값: 2 (보통)
 
+    // 능력치 UI 설정
+    this.statsUIWidth = parseFloat(localStorage.getItem('statsUIWidth')) || 0.5; // 인벤토리 넓이의 0.5배
+    this.statsUIHeight = parseFloat(localStorage.getItem('statsUIHeight')) || 0.5; // 인벤토리 높이의 0.5배
+    this.statsHpTextScale = parseFloat(localStorage.getItem('statsHpTextScale')) || 1.0;
+    this.statsAttackTextScale = parseFloat(localStorage.getItem('statsAttackTextScale')) || 1.0;
+
+    // 애니메이션 설정
+    this.animationEnabled = localStorage.getItem('animationEnabled') !== 'false'; // 기본값: true
+    this.animationInitialVelocityY = parseFloat(localStorage.getItem('animationInitialVelocityY')) || -10;
+    this.animationGravity = parseFloat(localStorage.getItem('animationGravity')) || 0.5;
+
     // 게임 설정
     this.loadGameSettings();
 
@@ -228,5 +239,70 @@ class Settings {
     // 0: 꺼짐, 1: 약함(20ms), 2: 보통(50ms), 3: 강함(100ms)
     const durations = [0, 20, 50, 100];
     return durations[this.vibrationIntensity];
+  }
+
+  // 능력치 UI 설정
+  setStatsUIWidth(value) {
+    this.statsUIWidth = Math.max(0.3, Math.min(1.0, value));
+    localStorage.setItem('statsUIWidth', this.statsUIWidth);
+  }
+
+  getStatsUIWidth() {
+    return this.statsUIWidth;
+  }
+
+  setStatsUIHeight(value) {
+    this.statsUIHeight = Math.max(0.3, Math.min(1.0, value));
+    localStorage.setItem('statsUIHeight', this.statsUIHeight);
+  }
+
+  getStatsUIHeight() {
+    return this.statsUIHeight;
+  }
+
+  setStatsHpTextScale(value) {
+    this.statsHpTextScale = Math.max(0.5, Math.min(2.0, value));
+    localStorage.setItem('statsHpTextScale', this.statsHpTextScale);
+  }
+
+  getStatsHpTextScale() {
+    return this.statsHpTextScale;
+  }
+
+  setStatsAttackTextScale(value) {
+    this.statsAttackTextScale = Math.max(0.5, Math.min(2.0, value));
+    localStorage.setItem('statsAttackTextScale', this.statsAttackTextScale);
+  }
+
+  getStatsAttackTextScale() {
+    return this.statsAttackTextScale;
+  }
+
+  // 애니메이션 설정
+  setAnimationEnabled(value) {
+    this.animationEnabled = value;
+    localStorage.setItem('animationEnabled', value);
+  }
+
+  getAnimationEnabled() {
+    return this.animationEnabled;
+  }
+
+  setAnimationInitialVelocityY(value) {
+    this.animationInitialVelocityY = Math.max(-20, Math.min(-5, value));
+    localStorage.setItem('animationInitialVelocityY', this.animationInitialVelocityY);
+  }
+
+  getAnimationInitialVelocityY() {
+    return this.animationInitialVelocityY;
+  }
+
+  setAnimationGravity(value) {
+    this.animationGravity = Math.max(0.1, Math.min(2.0, value));
+    localStorage.setItem('animationGravity', this.animationGravity);
+  }
+
+  getAnimationGravity() {
+    return this.animationGravity;
   }
 }

@@ -77,6 +77,15 @@ function showSettingsPopup() {
   const vibrationEnabled = game.settings.getVibrationEnabled();
   const vibrationIntensity = game.settings.getVibrationIntensity();
 
+  const statsUIWidth = game.settings.getStatsUIWidth();
+  const statsUIHeight = game.settings.getStatsUIHeight();
+  const statsHpTextScale = game.settings.getStatsHpTextScale();
+  const statsAttackTextScale = game.settings.getStatsAttackTextScale();
+
+  const animationEnabled = game.settings.getAnimationEnabled();
+  const animationInitialVelocityY = game.settings.getAnimationInitialVelocityY();
+  const animationGravity = game.settings.getAnimationGravity();
+
   const boardSize = game.settings.getBoardSize();
   const enemyCount = game.settings.getEnemyCount();
   const itemCount = game.settings.getItemCount();
@@ -109,7 +118,29 @@ function showSettingsPopup() {
         <label><input type="checkbox" id="vibrationEnabledCheckbox" ${vibrationEnabled ? 'checked' : ''}> 진동 피드백 (깃발 표시 시)</label><br><br>
 
         <label>진동 세기: <span id="vibrationIntensityValue">${['꺼짐', '약함', '보통', '강함'][vibrationIntensity]}</span></label><br>
-        <input type="range" id="vibrationIntensitySlider" min="0" max="3" step="1" value="${vibrationIntensity}" ${!vibrationEnabled ? 'disabled' : ''}>
+        <input type="range" id="vibrationIntensitySlider" min="0" max="3" step="1" value="${vibrationIntensity}" ${!vibrationEnabled ? 'disabled' : ''}><br><br>
+
+        <h4>능력치 UI 설정</h4>
+        <label>능력치 UI 넓이: <span id="statsUIWidthValue">${statsUIWidth.toFixed(1)}</span></label><br>
+        <input type="range" id="statsUIWidthSlider" min="0.3" max="1.0" step="0.1" value="${statsUIWidth}"><br><br>
+
+        <label>능력치 UI 높이: <span id="statsUIHeightValue">${statsUIHeight.toFixed(1)}</span></label><br>
+        <input type="range" id="statsUIHeightSlider" min="0.3" max="1.0" step="0.1" value="${statsUIHeight}"><br><br>
+
+        <label>HP 텍스트 크기: <span id="statsHpTextScaleValue">${statsHpTextScale.toFixed(1)}</span></label><br>
+        <input type="range" id="statsHpTextScaleSlider" min="0.5" max="2.0" step="0.1" value="${statsHpTextScale}"><br><br>
+
+        <label>공격력 텍스트 크기: <span id="statsAttackTextScaleValue">${statsAttackTextScale.toFixed(1)}</span></label><br>
+        <input type="range" id="statsAttackTextScaleSlider" min="0.5" max="2.0" step="0.1" value="${statsAttackTextScale}"><br><br>
+
+        <h4>애니메이션 설정</h4>
+        <label><input type="checkbox" id="animationEnabledCheckbox" ${animationEnabled ? 'checked' : ''}> 사망 애니메이션 활성화</label><br><br>
+
+        <label>초기 속도 (위로 튀는 힘): <span id="animationInitialVelocityYValue">${animationInitialVelocityY.toFixed(1)}</span></label><br>
+        <input type="range" id="animationInitialVelocityYSlider" min="-20" max="-5" step="0.5" value="${animationInitialVelocityY}" ${!animationEnabled ? 'disabled' : ''}><br><br>
+
+        <label>중력: <span id="animationGravityValue">${animationGravity.toFixed(1)}</span></label><br>
+        <input type="range" id="animationGravitySlider" min="0.1" max="2.0" step="0.1" value="${animationGravity}" ${!animationEnabled ? 'disabled' : ''}>
       </div>
 
       <hr style="margin: 20px 0;">
@@ -199,6 +230,57 @@ function showSettingsPopup() {
     game.settings.setVibrationIntensity(value);
     const labels = ['꺼짐', '약함', '보통', '강함'];
     document.getElementById('vibrationIntensityValue').textContent = labels[value];
+  });
+
+  // 능력치 UI 설정 이벤트
+  document.getElementById('statsUIWidthSlider').addEventListener('input', (e) => {
+    const value = parseFloat(e.target.value);
+    game.settings.setStatsUIWidth(value);
+    document.getElementById('statsUIWidthValue').textContent = value.toFixed(1);
+    game.uiManager.setupCanvas();
+    game.uiManager.render();
+  });
+
+  document.getElementById('statsUIHeightSlider').addEventListener('input', (e) => {
+    const value = parseFloat(e.target.value);
+    game.settings.setStatsUIHeight(value);
+    document.getElementById('statsUIHeightValue').textContent = value.toFixed(1);
+    game.uiManager.setupCanvas();
+    game.uiManager.render();
+  });
+
+  document.getElementById('statsHpTextScaleSlider').addEventListener('input', (e) => {
+    const value = parseFloat(e.target.value);
+    game.settings.setStatsHpTextScale(value);
+    document.getElementById('statsHpTextScaleValue').textContent = value.toFixed(1);
+    game.uiManager.render();
+  });
+
+  document.getElementById('statsAttackTextScaleSlider').addEventListener('input', (e) => {
+    const value = parseFloat(e.target.value);
+    game.settings.setStatsAttackTextScale(value);
+    document.getElementById('statsAttackTextScaleValue').textContent = value.toFixed(1);
+    game.uiManager.render();
+  });
+
+  // 애니메이션 설정 이벤트
+  document.getElementById('animationEnabledCheckbox').addEventListener('change', (e) => {
+    const enabled = e.target.checked;
+    game.settings.setAnimationEnabled(enabled);
+    document.getElementById('animationInitialVelocityYSlider').disabled = !enabled;
+    document.getElementById('animationGravitySlider').disabled = !enabled;
+  });
+
+  document.getElementById('animationInitialVelocityYSlider').addEventListener('input', (e) => {
+    const value = parseFloat(e.target.value);
+    game.settings.setAnimationInitialVelocityY(value);
+    document.getElementById('animationInitialVelocityYValue').textContent = value.toFixed(1);
+  });
+
+  document.getElementById('animationGravitySlider').addEventListener('input', (e) => {
+    const value = parseFloat(e.target.value);
+    game.settings.setAnimationGravity(value);
+    document.getElementById('animationGravityValue').textContent = value.toFixed(1);
   });
 
   // 게임 설정 이벤트

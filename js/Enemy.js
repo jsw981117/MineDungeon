@@ -12,8 +12,13 @@ class Enemy extends Piece {
 
     // 적이 먼저 공격 (기습 ×1.5)
     const damage = Math.floor(this.attack * 1.5);
-    player.takeDamage(damage);
+    const damageResult = player.takeDamage(damage);
     console.log(`${damage} 피해!`);
+
+    // 아이템 파괴 애니메이션
+    if (damageResult && damageResult.broken && game.uiManager) {
+      game.uiManager.addItemBreakAnimation(damageResult.slotIndex, damageResult.item);
+    }
 
     return player.isDead();
   }
@@ -31,6 +36,11 @@ class Enemy extends Piece {
     if (this.hp <= 0) {
       console.log(`${this.name} 처치!`);
 
+      // 사망 애니메이션
+      if (tile && game.uiManager) {
+        game.uiManager.addDeathAnimation(tile.x, tile.y, this);
+      }
+
       // 주변 타일 숫자 업데이트
       if (tile && game.board) {
         game.board.updateAdjacentNumbers(tile.x, tile.y);
@@ -41,8 +51,13 @@ class Enemy extends Piece {
 
     // 적이 반격
     const enemyDamage = this.attack;
-    player.takeDamage(enemyDamage);
+    const damageResult = player.takeDamage(enemyDamage);
     console.log(`${this.name}의 반격! ${enemyDamage} 피해!`);
+
+    // 아이템 파괴 애니메이션
+    if (damageResult && damageResult.broken && game.uiManager) {
+      game.uiManager.addItemBreakAnimation(damageResult.slotIndex, damageResult.item);
+    }
 
     return false; // 적 생존
   }
