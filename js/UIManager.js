@@ -600,6 +600,7 @@ class UIManager {
       vy: initialVY,
       startTime: Date.now(),
       type: piece.type,
+      size: (this.tileSize * this.scale) / 3, // 타일 내 원 크기와 동일
       data: {
         name: piece.name,
         color: piece.type === 'enemy' ? '#f00' : '#4af'
@@ -638,6 +639,7 @@ class UIManager {
       vy: initialVY,
       startTime: Date.now(),
       type: 'item',
+      size: slotSize / 4, // 인벤토리 슬롯 내 원 크기와 동일
       data: {
         name: item.name,
         color: '#4af'
@@ -681,15 +683,15 @@ class UIManager {
     this.animations.forEach(anim => {
       this.ctx.save();
 
-      // 원 그리기
+      // 원 그리기 (저장된 크기 사용)
       this.ctx.fillStyle = anim.data.color;
       this.ctx.beginPath();
-      this.ctx.arc(anim.x, anim.y, 15, 0, Math.PI * 2);
+      this.ctx.arc(anim.x, anim.y, anim.size, 0, Math.PI * 2);
       this.ctx.fill();
 
-      // 이름 그리기
+      // 이름 그리기 (크기에 비례하는 폰트)
       this.ctx.fillStyle = '#fff';
-      this.ctx.font = '12px Arial';
+      this.ctx.font = `${anim.size * 0.8}px Arial`;
       this.ctx.textAlign = 'center';
       this.ctx.textBaseline = 'middle';
       this.ctx.fillText(anim.data.name, anim.x, anim.y);
