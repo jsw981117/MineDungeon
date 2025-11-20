@@ -66,10 +66,21 @@ class UIManager {
     const containerWidth = container.clientWidth;
     const containerHeight = container.clientHeight;
 
-    const inventoryRatio = 0.15;
-    this.inventoryHeight = containerHeight * inventoryRatio;
+    const orientation = this.game.settings.getOrientation();
+
+    // 화면 방향에 따라 인벤토리 높이 계산
+    let inventoryHeight;
+    if (orientation === 'landscape') {
+      // 가로 모드: 높이가 작으므로 절대값 또는 더 큰 비율 사용
+      inventoryHeight = Math.min(containerHeight * 0.25, 150);
+    } else {
+      // 세로 모드: 기존 방식
+      inventoryHeight = containerHeight * 0.15;
+    }
+
+    this.inventoryHeight = inventoryHeight;
     this.statsUIHeight = this.inventoryHeight * this.game.settings.getStatsUIHeight();
-    const boardHeight = containerHeight * (1 - inventoryRatio);
+    const boardHeight = containerHeight - this.inventoryHeight - this.statsUIHeight - 30; // 30 = bottomSafeArea
 
     const boardSize = Math.min(containerWidth, boardHeight) * 0.9;
 
