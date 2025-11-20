@@ -262,7 +262,7 @@ class UIManager {
           this.inventoryHoldTimer = setTimeout(() => {
             this.startDrag(slotIndex, item, canvasX, canvasY);
             this.inventoryHoldTimer = null;
-          }, this.game.settings.getHoldDuration() * 1000);
+          }, this.game.settings.getDragStartDuration() * 1000);
         } else {
           // 장착용 아이템 - 바로 장착
           this.game.onInventoryClick(slotIndex);

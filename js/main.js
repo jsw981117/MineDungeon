@@ -74,6 +74,7 @@ function showSettingsPopup() {
   const buttonScale = game.settings.getButtonScale();
   const orientation = game.settings.getOrientation();
   const holdDuration = game.settings.getHoldDuration();
+  const dragStartDuration = game.settings.getDragStartDuration();
   const vibrationEnabled = game.settings.getVibrationEnabled();
   const vibrationIntensity = game.settings.getVibrationIntensity();
 
@@ -109,6 +110,9 @@ function showSettingsPopup() {
 
         <label>홀드 시간 (깃발 표시): <span id="holdDurationValue">${holdDuration.toFixed(1)}초</span></label><br>
         <input type="range" id="holdDurationSlider" min="0.1" max="2" step="0.1" value="${holdDuration}"><br><br>
+
+        <label>드래그 시작 시간 (아이템 사용): <span id="dragStartDurationValue">${dragStartDuration.toFixed(1)}초</span></label><br>
+        <input type="range" id="dragStartDurationSlider" min="0.1" max="2" step="0.1" value="${dragStartDuration}"><br><br>
 
         <label>텍스트 크기: <span id="textScaleValue">${textScale.toFixed(1)}</span></label><br>
         <input type="range" id="textScaleSlider" min="0.5" max="2" step="0.1" value="${textScale}"><br><br>
@@ -225,6 +229,12 @@ function showSettingsPopup() {
     const value = parseFloat(e.target.value);
     game.settings.setHoldDuration(value);
     document.getElementById('holdDurationValue').textContent = value.toFixed(1) + '초';
+  });
+
+  document.getElementById('dragStartDurationSlider').addEventListener('input', (e) => {
+    const value = parseFloat(e.target.value);
+    game.settings.setDragStartDuration(value);
+    document.getElementById('dragStartDurationValue').textContent = value.toFixed(1) + '초';
   });
 
   document.getElementById('textScaleSlider').addEventListener('input', (e) => {

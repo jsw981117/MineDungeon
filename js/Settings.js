@@ -5,6 +5,7 @@ class Settings {
     this.buttonScale = parseFloat(localStorage.getItem('buttonScale')) || 1;
     this.orientation = localStorage.getItem('orientation') || 'portrait';
     this.holdDuration = parseFloat(localStorage.getItem('holdDuration')) || 0.6;
+    this.dragStartDuration = parseFloat(localStorage.getItem('dragStartDuration')) || 0.2;
     this.vibrationEnabled = localStorage.getItem('vibrationEnabled') !== 'false'; // 기본값: true
     this.vibrationIntensity = parseInt(localStorage.getItem('vibrationIntensity')) || 2; // 0-3, 기본값: 2 (보통)
 
@@ -114,6 +115,15 @@ class Settings {
   setHoldDuration(value) {
     this.holdDuration = Math.max(0.1, Math.min(2, value));
     localStorage.setItem('holdDuration', this.holdDuration);
+  }
+
+  setDragStartDuration(value) {
+    this.dragStartDuration = Math.max(0.1, Math.min(2, value));
+    localStorage.setItem('dragStartDuration', this.dragStartDuration);
+  }
+
+  getDragStartDuration() {
+    return this.dragStartDuration;
   }
 
   getTextScale() {
