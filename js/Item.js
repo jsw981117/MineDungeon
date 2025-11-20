@@ -4,6 +4,10 @@ class Item extends Piece {
     this.attack = data.attack || 0;
     this.durability = data.durability || 1;
     this.maxDurability = data.durability || 1;
+    this.usable = data.usable || false;
+    this.equippable = data.equippable !== undefined ? data.equippable : true;
+    this.effect = data.effect || null;
+    this.effectValue = data.effectValue || 0;
   }
 
   interact(player, game, tile = null) {
@@ -19,7 +23,32 @@ class Item extends Piece {
     return true; // 타일에서 제거
   }
 
+  use(player) {
+    if (!this.usable) return false;
+
+    switch (this.effect) {
+      case 'heal':
+        player.heal(this.effectValue);
+        console.log(`${this.name} 사용! HP ${this.effectValue} 회복`);
+        break;
+      default:
+        return false;
+    }
+
+    // 내구도 감소
+    this.durability--;
+    return true;
+  }
+
   getDurability() {
     return this.durability;
+  }
+
+  isUsable() {
+    return this.usable;
+  }
+
+  isEquippable() {
+    return this.equippable;
   }
 }

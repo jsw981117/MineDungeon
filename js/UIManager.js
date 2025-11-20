@@ -32,6 +32,13 @@ class UIManager {
     this.lastFrameTime = 0;
     this.isAnimating = false;
 
+    // 드래그 시스템
+    this.isDragging = false;
+    this.draggedItem = null; // { slotIndex, item, startX, startY }
+    this.dragX = 0;
+    this.dragY = 0;
+    this.inventoryHoldTimer = null;
+
     this.setupCanvas();
     this.setupEvents();
   }
@@ -238,7 +245,17 @@ class UIManager {
     if (canvasY >= this.canvas.height - this.inventoryHeight - bottomSafeArea) {
       const slotIndex = this.getInventorySlotIndex(canvasX, canvasY);
       if (slotIndex !== -1) {
-        this.game.onInventoryClick(slotIndex);
+        const item = this.game.player.inventory[slotIndex];
+        if (item && item.isUsable()) {
+          // 사용 가능한 아이템 - 롱프레스로 드래그 시작
+          this.inventoryHoldTimer = setTimeout(() => {
+            this.startDrag(slotIndex, item, canvasX, canvasY);
+            this.inventoryHoldTimer = null;
+          }, this.game.settings.getHoldDuration() * 1000);
+        } else {
+          // 장착용 아이템 - 바로 장착
+          this.game.onInventoryClick(slotIndex);
+        }
         return;
       }
     }
@@ -276,6 +293,18 @@ class UIManager {
   handlePointerUp(e, clientX, clientY) {
     if (e.button === 2) return;
 
+    // 인벤토리 롱프레스 타이머 취소
+    if (this.inventoryHoldTimer) {
+      clearTimeout(this.inventoryHoldTimer);
+      this.inventoryHoldTimer = null;
+    }
+
+    // 드래그 중이면 드롭 처리
+    if (this.isDragging) {
+      this.handleDrop(clientX, clientY);
+      return;
+    }
+
     this.isPanning = false;
 
     const coords = this.screenToBoard(clientX, clientY);
@@ -299,6 +328,15 @@ class UIManager {
   }
 
   handlePointerMove(e, clientX, clientY) {
+    // 드래그 중이면 드래그 위치 업데이트
+    if (this.isDragging) {
+      const rect = this.canvas.getBoundingClientRect();
+      this.dragX = clientX - rect.left;
+      this.dragY = clientY - rect.top;
+      this.render();
+      return;
+    }
+
     if (this.isPanning && this.holdTimer === null) {
       // 드래그로 팬
       const dx = clientX - this.lastPanX;
@@ -360,6 +398,12 @@ class UIManager {
     this.renderStatsUI();
     this.renderInventory();
     this.renderAnimations();
+
+    // 드래그 중이면 사용 영역과 드래그 중인 아이템 렌더링
+    if (this.isDragging) {
+      this.renderUseArea();
+      this.renderDraggedItem();
+    }
   }
 
   renderBoard() {
@@ -814,5 +858,112 @@ class UIManager {
       tooltip.remove();
       this.tooltipVisible = false;
     }
+  }
+
+  // 드래그 시스템
+  startDrag(slotIndex, item, canvasX, canvasY) {
+    this.isDragging = true;
+    this.draggedItem = { slotIndex, item, startX: canvasX, startY: canvasY };
+    this.dragX = canvasX;
+    this.dragY = canvasY;
+    this.render();
+  }
+
+  handleDrop(clientX, clientY) {
+    if (!this.isDragging || !this.draggedItem) return;
+
+    const rect = this.canvas.getBoundingClientRect();
+    const canvasX = clientX - rect.left;
+    const canvasY = clientY - rect.top;
+
+    // 사용 영역 범위 계산
+    const bottomSafeArea = 30;
+    const useAreaHeight = 80;
+    const useAreaY = this.canvas.height - this.inventoryHeight - this.statsUIHeight - bottomSafeArea - useAreaHeight;
+
+    // 사용 영역에 드롭했는지 확인
+    if (canvasY >= useAreaY && canvasY < useAreaY + useAreaHeight) {
+      // 아이템 사용
+      const used = this.game.onItemUse(this.draggedItem.slotIndex);
+      if (used) {
+        console.log(`${this.draggedItem.item.name} 사용!`);
+      }
+    }
+
+    // 드래그 종료
+    this.isDragging = false;
+    this.draggedItem = null;
+    this.render();
+  }
+
+  renderUseArea() {
+    const bottomSafeArea = 30;
+    const useAreaHeight = 80;
+    const useAreaY = this.canvas.height - this.inventoryHeight - this.statsUIHeight - bottomSafeArea - useAreaHeight;
+    const useAreaWidth = this.canvas.width * 0.8;
+    const useAreaX = (this.canvas.width - useAreaWidth) / 2;
+
+    // 드래그 중인 위치가 사용 영역 안에 있는지 확인
+    const isInside = this.dragY >= useAreaY && this.dragY < useAreaY + useAreaHeight &&
+                     this.dragX >= useAreaX && this.dragX < useAreaX + useAreaWidth;
+
+    // 사용 영역 배경
+    this.ctx.fillStyle = isInside ? 'rgba(0, 255, 0, 0.3)' : 'rgba(100, 100, 100, 0.3)';
+    this.ctx.fillRect(useAreaX, useAreaY, useAreaWidth, useAreaHeight);
+    this.ctx.strokeStyle = isInside ? '#0f0' : '#fff';
+    this.ctx.lineWidth = 3;
+    this.ctx.strokeRect(useAreaX, useAreaY, useAreaWidth, useAreaHeight);
+
+    // "여기에 내려놓으면 사용" 텍스트
+    this.ctx.fillStyle = '#fff';
+    this.ctx.font = 'bold 20px Arial';
+    this.ctx.textAlign = 'center';
+    this.ctx.textBaseline = 'middle';
+    this.ctx.fillText('여기에 내려놓으면 사용', this.canvas.width / 2, useAreaY + useAreaHeight / 2 + 15);
+
+    // 효과 설명 (위쪽)
+    if (this.draggedItem && this.draggedItem.item) {
+      const item = this.draggedItem.item;
+      this.ctx.font = '16px Arial';
+      this.ctx.fillStyle = '#ff0';
+      let effectText = '';
+      if (item.effect === 'heal') {
+        effectText = `HP ${item.effectValue} 회복`;
+      }
+      this.ctx.fillText(`${item.name}: ${effectText}`, this.canvas.width / 2, useAreaY - 20);
+    }
+  }
+
+  renderDraggedItem() {
+    if (!this.draggedItem) return;
+
+    const item = this.draggedItem.item;
+    const size = this.inventoryHeight * 0.8;
+
+    // 드래그 중인 아이템 (약간 투명하게)
+    this.ctx.save();
+    this.ctx.globalAlpha = 0.8;
+
+    // 배경
+    this.ctx.fillStyle = '#555';
+    this.ctx.fillRect(this.dragX - size / 2, this.dragY - size / 2, size, size);
+    this.ctx.strokeStyle = '#fff';
+    this.ctx.lineWidth = 2;
+    this.ctx.strokeRect(this.dragX - size / 2, this.dragY - size / 2, size, size);
+
+    // 아이템 아이콘
+    this.ctx.fillStyle = '#4af';
+    this.ctx.beginPath();
+    this.ctx.arc(this.dragX, this.dragY - size / 6, size / 4, 0, Math.PI * 2);
+    this.ctx.fill();
+
+    // 아이템 이름
+    this.ctx.fillStyle = '#fff';
+    this.ctx.font = `${size * 0.12}px Arial`;
+    this.ctx.textAlign = 'center';
+    this.ctx.textBaseline = 'top';
+    this.ctx.fillText(item.name, this.dragX, this.dragY + size * 0.05);
+
+    this.ctx.restore();
   }
 }

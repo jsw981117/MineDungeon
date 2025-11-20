@@ -38,6 +38,7 @@ class Settings {
       this.playerInitialHp = parsed.playerInitialHp || 10;
       this.playerAttack = parsed.playerAttack || 1;
       this.items = parsed.items || this.getDefaultItems();
+      this.startingItems = parsed.startingItems || this.getDefaultStartingItems();
     } else {
       // 기본값
       this.boardSize = 16;
@@ -49,15 +50,21 @@ class Settings {
       this.playerInitialHp = 10;
       this.playerAttack = 1;
       this.items = this.getDefaultItems();
+      this.startingItems = this.getDefaultStartingItems();
     }
   }
 
   getDefaultItems() {
     return [
-      { id: 'sword', name: '검', attack: 3, durability: 5 },
-      { id: 'axe', name: '도끼', attack: 5, durability: 3 },
-      { id: 'spear', name: '창', attack: 2, durability: 10 }
+      { id: 'sword', name: '검', attack: 3, durability: 5, usable: false, equippable: true },
+      { id: 'axe', name: '도끼', attack: 5, durability: 3, usable: false, equippable: true },
+      { id: 'spear', name: '창', attack: 2, durability: 10, usable: false, equippable: true },
+      { id: 'health_potion', name: '회복 포션', attack: 0, durability: 1, usable: true, equippable: false, effect: 'heal', effectValue: 30 }
     ];
+  }
+
+  getDefaultStartingItems() {
+    return ['sword', 'health_potion'];
   }
 
   saveGameSettings() {
@@ -70,7 +77,8 @@ class Settings {
       attackPerFloors: this.attackPerFloors,
       playerInitialHp: this.playerInitialHp,
       playerAttack: this.playerAttack,
-      items: this.items
+      items: this.items,
+      startingItems: this.startingItems
     };
     localStorage.setItem('gameSettings', JSON.stringify(settings));
   }
@@ -304,5 +312,27 @@ class Settings {
 
   getAnimationGravity() {
     return this.animationGravity;
+  }
+
+  // 시작 아이템 설정
+  getStartingItems() {
+    return this.startingItems;
+  }
+
+  setStartingItems(items) {
+    this.startingItems = items;
+    this.saveGameSettings();
+  }
+
+  addStartingItem(itemId) {
+    if (this.startingItems.length >= 4) return false; // 최대 4개
+    this.startingItems.push(itemId);
+    this.saveGameSettings();
+    return true;
+  }
+
+  removeStartingItem(index) {
+    this.startingItems.splice(index, 1);
+    this.saveGameSettings();
   }
 }

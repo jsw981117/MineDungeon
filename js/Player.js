@@ -48,6 +48,13 @@ class Player {
 
   equipItem(slotIndex) {
     if (slotIndex >= 0 && slotIndex < this.inventory.length && this.inventory[slotIndex]) {
+      const item = this.inventory[slotIndex];
+
+      // 장착 불가능한 아이템은 무시
+      if (!item.isEquippable()) {
+        return;
+      }
+
       // 이미 장착된 슬롯을 다시 클릭하면 해제
       if (this.equippedSlot === slotIndex) {
         this.equippedSlot = null;
@@ -55,6 +62,35 @@ class Player {
         this.equippedSlot = slotIndex;
       }
     }
+  }
+
+  useItem(slotIndex) {
+    if (slotIndex >= 0 && slotIndex < this.inventory.length && this.inventory[slotIndex]) {
+      const item = this.inventory[slotIndex];
+
+      // 사용 불가능한 아이템은 무시
+      if (!item.isUsable()) {
+        return false;
+      }
+
+      // 아이템 사용
+      const used = item.use(this);
+      if (!used) {
+        return false;
+      }
+
+      // 내구도가 0이 되면 아이템 제거
+      if (item.durability <= 0) {
+        this.inventory[slotIndex] = null;
+        // 장착 중이었으면 장착 해제
+        if (this.equippedSlot === slotIndex) {
+          this.equippedSlot = null;
+        }
+      }
+
+      return true;
+    }
+    return false;
   }
 
   getAttack() {

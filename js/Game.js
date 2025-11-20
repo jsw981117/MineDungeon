@@ -10,6 +10,25 @@ class Game {
     this.board = new Board(boardSize, boardSize);
     this.currentFloor = 1;
     this.uiManager = null;
+
+    // 시작 아이템 지급
+    this.giveStartingItems();
+  }
+
+  giveStartingItems() {
+    const startingItemIds = this.settings.getStartingItems();
+    const allItems = this.settings.getItems();
+
+    startingItemIds.forEach(itemId => {
+      const itemData = allItems.find(item => item.id === itemId);
+      if (itemData) {
+        const item = new Item({
+          ...itemData,
+          type: 'item'
+        });
+        this.player.addItem(item);
+      }
+    });
   }
 
   initCanvas(canvas) {
@@ -240,6 +259,16 @@ class Game {
   onInventoryClick(slotIndex) {
     this.player.equipItem(slotIndex);
     this.uiManager.render();
+  }
+
+  // 아이템 사용 핸들러
+  onItemUse(slotIndex) {
+    const used = this.player.useItem(slotIndex);
+    if (used) {
+      this.uiManager.updateStats();
+      this.uiManager.render();
+    }
+    return used;
   }
 
   gameOver() {

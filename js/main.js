@@ -95,6 +95,7 @@ function showSettingsPopup() {
   const playerInitialHp = game.settings.getPlayerInitialHp();
   const playerAttack = game.settings.getPlayerAttack();
   const items = game.settings.getItems();
+  const startingItems = game.settings.getStartingItems();
 
   content.innerHTML = `
     <div class="popup-title">설정</div>
@@ -180,6 +181,27 @@ function showSettingsPopup() {
         <label>내구도: <input type="number" id="itemDurabilityInput" min="1" max="100" value="1" style="width: 60px;"></label><br><br>
         <button id="saveItemBtn" class="popup-button">저장</button>
         <button id="cancelItemBtn" class="popup-button">취소</button>
+      </div>
+
+      <hr style="margin: 20px 0;">
+
+      <div class="settings-section">
+        <h3>시작 아이템 (최대 4개)</h3>
+        <div id="startingItemsList" style="margin-bottom: 10px;">
+          ${startingItems.map((itemId, index) => {
+            const itemData = items.find(i => i.id === itemId);
+            return `
+              <div class="item-row" style="margin: 5px 0; padding: 5px; background: #e0f0ff; border-radius: 3px;">
+                <span>${itemData ? itemData.name : itemId}</span>
+                <button onclick="removeStartingItem(${index})" style="margin-left: 10px;">제거</button>
+              </div>
+            `;
+          }).join('')}
+        </div>
+        <select id="startingItemSelect" style="margin-bottom: 10px;">
+          ${items.map(item => `<option value="${item.id}">${item.name}</option>`).join('')}
+        </select>
+        <button id="addStartingItemBtn" class="popup-button">시작 아이템 추가</button>
       </div>
     </div>
     <div class="popup-buttons">
@@ -321,6 +343,18 @@ function showSettingsPopup() {
     showItemForm();
   });
 
+  // 시작 아이템 추가 버튼
+  document.getElementById('addStartingItemBtn').addEventListener('click', () => {
+    const select = document.getElementById('startingItemSelect');
+    const itemId = select.value;
+    const added = game.settings.addStartingItem(itemId);
+    if (!added) {
+      alert('시작 아이템은 최대 4개까지만 추가할 수 있습니다.');
+    } else {
+      showSettingsPopup(); // 새로고침
+    }
+  });
+
   // 재시작 버튼
   document.getElementById('restartBtn').addEventListener('click', () => {
     closePopup();
@@ -398,6 +432,12 @@ function deleteItem(index) {
     game.settings.removeItem(index);
     showSettingsPopup(); // 새로고침
   }
+}
+
+// 시작 아이템 제거
+function removeStartingItem(index) {
+  game.settings.removeStartingItem(index);
+  showSettingsPopup(); // 새로고침
 }
 
 function closePopup() {
